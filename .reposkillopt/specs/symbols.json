@@ -1,0 +1,314 @@
+[
+  {
+    "file": "extension.js",
+    "line": 11,
+    "name": "SearchEverythingLightly",
+    "kind": "class"
+  },
+  {
+    "file": "extension.js",
+    "line": 12,
+    "name": ".enable()",
+    "kind": "function"
+  },
+  {
+    "file": "extension.js",
+    "line": 22,
+    "name": ".disable()",
+    "kind": "function"
+  },
+  {
+    "file": "prefs.js",
+    "line": 9,
+    "name": "SearchPreferences",
+    "kind": "class"
+  },
+  {
+    "file": "prefs.js",
+    "line": 10,
+    "name": ".fillPreferencesWindow()",
+    "kind": "function"
+  },
+  {
+    "file": "prefs.js",
+    "line": 47,
+    "name": "._captureShortcut()",
+    "kind": "function"
+  },
+  {
+    "file": "src/fileActions.js",
+    "line": 5,
+    "name": "checkFile()",
+    "kind": "function"
+  },
+  {
+    "file": "src/fileActions.js",
+    "line": 18,
+    "name": "launch()",
+    "kind": "function"
+  },
+  {
+    "file": "src/fileActions.js",
+    "line": 31,
+    "name": "reveal()",
+    "kind": "function"
+  },
+  {
+    "file": "src/fileActions.js",
+    "line": 46,
+    "name": "openPath()",
+    "kind": "function"
+  },
+  {
+    "file": "src/query.js",
+    "line": 8,
+    "name": "queryTerms()",
+    "kind": "function"
+  },
+  {
+    "file": "src/query.js",
+    "line": 12,
+    "name": "queryState()",
+    "kind": "function"
+  },
+  {
+    "file": "src/query.js",
+    "line": 18,
+    "name": "buildArguments()",
+    "kind": "function"
+  },
+  {
+    "file": "src/query.js",
+    "line": 30,
+    "name": "abbreviatePath()",
+    "kind": "function"
+  },
+  {
+    "file": "src/query.js",
+    "line": 36,
+    "name": "displayText()",
+    "kind": "function"
+  },
+  {
+    "file": "src/ranking.js",
+    "line": 4,
+    "name": "normalize()",
+    "kind": "function"
+  },
+  {
+    "file": "src/ranking.js",
+    "line": 8,
+    "name": "matchRank()",
+    "kind": "function"
+  },
+  {
+    "file": "src/ranking.js",
+    "line": 21,
+    "name": "locationRank()",
+    "kind": "function"
+  },
+  {
+    "file": "src/ranking.js",
+    "line": 31,
+    "name": "rankResults()",
+    "kind": "function"
+  },
+  {
+    "file": "src/resultItem.js",
+    "line": 12,
+    "name": "ResultItem",
+    "kind": "class"
+  },
+  {
+    "file": "src/searchEngine.js",
+    "line": 8,
+    "name": "SearchError",
+    "kind": "class"
+  },
+  {
+    "file": "src/searchEngine.js",
+    "line": 9,
+    "name": ".constructor()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchEngine.js",
+    "line": 15,
+    "name": "SearchEngine",
+    "kind": "class"
+  },
+  {
+    "file": "src/searchEngine.js",
+    "line": 16,
+    "name": ".constructor()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchEngine.js",
+    "line": 24,
+    "name": ".cancel()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchEngine.js",
+    "line": 35,
+    "name": "._clearTimer()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchEngine.js",
+    "line": 42,
+    "name": ".search()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 16,
+    "name": "SearchOverlay",
+    "kind": "class"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 17,
+    "name": ".constructor()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 60,
+    "name": ".toggle()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 85,
+    "name": ".close()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 92,
+    "name": ".destroy()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 104,
+    "name": "._cancelPending()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 120,
+    "name": "._clearResults()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 128,
+    "name": "._setStatus()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 133,
+    "name": "._queryChanged()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 162,
+    "name": "._search()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 189,
+    "name": "._select()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 206,
+    "name": "._keyPressed()",
+    "kind": "function"
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 231,
+    "name": "._activate()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/integration.js",
+    "line": 10,
+    "name": "assert()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/integration.js",
+    "line": 15,
+    "name": "test()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/integration.js",
+    "line": 21,
+    "name": "expectCode()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/run_shell_smoke.py",
+    "line": 16,
+    "name": "session",
+    "kind": "function"
+  },
+  {
+    "file": "tests/run_shell_smoke.py",
+    "line": 61,
+    "name": "main",
+    "kind": "function"
+  },
+  {
+    "file": "tests/shellSmoke.js",
+    "line": 8,
+    "name": "delay()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/shellSmoke.js",
+    "line": 15,
+    "name": "until()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/shellSmoke.js",
+    "line": 24,
+    "name": "assert()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/shellSmoke.js",
+    "line": 29,
+    "name": "key()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/shellSmoke.js",
+    "line": 34,
+    "name": "hotkey()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/shellSmoke.js",
+    "line": 42,
+    "name": "screenshot()",
+    "kind": "function"
+  },
+  {
+    "file": "tests/shellSmoke.js",
+    "line": 48,
+    "name": "run()",
+    "kind": "function"
+  }
+]

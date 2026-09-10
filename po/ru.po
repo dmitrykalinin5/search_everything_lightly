@@ -1,0 +1,91 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Search Everything Lightly 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-09 23:00+0300\n"
+"PO-Revision-Date: 2026-09-09 23:00+0300\n"
+"Last-Translator: Search Everything Lightly contributors\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "Search files..."
+msgstr "Поиск файлов…"
+
+msgid "↑↓ Select   Enter Open   Ctrl+Enter Folder   Shift+Enter Reveal   Esc Close"
+msgstr "↑↓ Выбор   Enter Открыть   Ctrl+Enter Папка   Shift+Enter Показать   Esc Закрыть"
+
+msgid "plocate is not installed.\nInstall it to use Search Everything Lightly.\nFedora: sudo dnf install plocate"
+msgstr "plocate не установлен.\nУстановите его для работы Search Everything Lightly.\nFedora: sudo dnf install plocate"
+
+msgid "Type at least 3 characters to search."
+msgstr "Введите не менее 3 символов для поиска."
+
+msgid "The query is too long or contains an invalid character."
+msgstr "Запрос слишком длинный или содержит недопустимый символ."
+
+msgid "Searching…"
+msgstr "Поиск…"
+
+msgid "No matching files. The index may need updating."
+msgstr "Ничего не найдено. Возможно, нужно обновить индекс."
+
+msgid "The plocate index is unavailable or unreadable.\nSee the README for index setup and permissions."
+msgstr "Индекс plocate отсутствует или недоступен для чтения.\nИнструкции по настройке индекса и прав доступа — в README."
+
+msgid "Search timed out. Try a more specific query."
+msgstr "Время поиска истекло. Попробуйте уточнить запрос."
+
+msgid "Search failed. Please try again."
+msgstr "Ошибка поиска. Попробуйте ещё раз."
+
+msgid "Opening…"
+msgstr "Открытие…"
+
+msgid "Could not open this location. It may have been removed or disconnected, or no application is available."
+msgstr "Не удалось открыть объект. Возможно, он удалён, диск отключён или нет подходящего приложения."
+
+msgid "Search"
+msgstr "Поиск"
+
+msgid "Keyboard shortcut"
+msgstr "Горячая клавиша"
+
+msgid "Super+Space may already switch keyboard layouts in GNOME. Choose another shortcut here if needed."
+msgstr "Super+Space может быть занято переключением раскладки GNOME. При необходимости выберите другое сочетание здесь."
+
+msgid "Open or close search"
+msgstr "Открыть или закрыть поиск"
+
+msgid "Change shortcut"
+msgstr "Изменить сочетание"
+
+msgid "Reset shortcut"
+msgstr "Сбросить сочетание"
+
+msgid "Search index"
+msgstr "Поисковый индекс"
+
+msgid "Search uses the existing plocate index. New files appear after the next index update."
+msgstr "Поиск использует существующий индекс plocate. Новые файлы появляются после очередного обновления индекса."
+
+msgid "Installed"
+msgstr "Установлен"
+
+msgid "Not installed. Fedora: sudo dnf install plocate"
+msgstr "Не установлен. Fedora: sudo dnf install plocate"
+
+msgid "Index updates"
+msgstr "Обновление индекса"
+
+msgid "Use your system’s plocate-updatedb.timer, or run sudo updatedb explicitly. The extension never runs it automatically."
+msgstr "Используйте системный plocate-updatedb.timer или вручную выполните sudo updatedb. Расширение не запускает обновление автоматически."
+
+msgid "Press a shortcut with Ctrl, Alt or Super.\nEscape cancels."
+msgstr "Нажмите сочетание с Ctrl, Alt или Super.\nEscape — отмена."
+
+msgid "Cancel"
+msgstr "Отмена"

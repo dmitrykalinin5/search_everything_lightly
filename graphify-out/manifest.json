@@ -1,0 +1,122 @@
+{
+  "/home/ogultra/Documents/search_everything_lightly/metadata.json": {
+    "mtime": 1788984261.426355,
+    "ast_hash": "44f1ba108bb228d1d754e1e5e8353062",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/extension.js": {
+    "mtime": 1788984261.581826,
+    "ast_hash": "e8aed7f8de381f4d7459ccb9f55765cc",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/prefs.js": {
+    "mtime": 1788984658.4600177,
+    "ast_hash": "afddb2569f329f482bc47592130e78ab",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/package.json": {
+    "mtime": 1788984548.4027164,
+    "ast_hash": "3efeeea51f40d6e07cdd1b48bcbaaf04",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/src/query.js": {
+    "mtime": 1788984262.2188191,
+    "ast_hash": "3c0e48c3ed48a52f7ecf9ec57d67cd4f",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/src/ranking.js": {
+    "mtime": 1788984262.4148169,
+    "ast_hash": "ffc5e27ce801b9ca4714a7de500877a0",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/src/searchEngine.js": {
+    "mtime": 1788984262.6078148,
+    "ast_hash": "ec77abd02fc0b1ee4084900dd579d443",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/src/resultItem.js": {
+    "mtime": 1788985405.4742138,
+    "ast_hash": "7c9a4d93e93e8163505d297da55e1690",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/src/fileActions.js": {
+    "mtime": 1788984416.7307477,
+    "ast_hash": "97df77d67608c550c58bb163e6609dfe",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/src/searchOverlay.js": {
+    "mtime": 1788985405.6732135,
+    "ast_hash": "087bd8dcb459edd2deeaf2bf310c7746",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/scripts/build.py": {
+    "mtime": 1788984549.1367114,
+    "ast_hash": "bdb123e991db397b5f27e2c00e31ab2e",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/scripts/check.py": {
+    "mtime": 1788985803.6325552,
+    "ast_hash": "11e369266b5e7b250583a884a7e71282",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/tests/query.test.js": {
+    "mtime": 1788984549.6217082,
+    "ast_hash": "1bd8ce5084c3d6e3c22660162d431990",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/tests/ranking.test.js": {
+    "mtime": 1788984549.8147068,
+    "ast_hash": "729ececa6a1eab0d329aa6c086ab4865",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/tests/run_integration.py": {
+    "mtime": 1788984658.6440165,
+    "ast_hash": "33b49088fe7e7fb011755c3c0b3f6227",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/tests/integration.js": {
+    "mtime": 1788984658.8420153,
+    "ast_hash": "c5ec0aaaa4d3f7f9608acf8bbe662928",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/tests/run_shell_smoke.py": {
+    "mtime": 1788985530.585,
+    "ast_hash": "7583c57de2e74bb4feda9b8fe4cd4ba8",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/tests/shellSmoke.js": {
+    "mtime": 1788985626.367842,
+    "ast_hash": "fbc350ad6f1bdccadb75f06b63390edd",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/tests/check_archive.py": {
+    "mtime": 1788986095.9480782,
+    "ast_hash": "fb30dcba279e003ebd4f42bd4cc7eddc",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/TECHNICAL_SPEC_Search_Everything_Lightly.md": {
+    "mtime": 1788983885.6382976,
+    "ast_hash": "69ae3aec82190880adc14304fbb71d0d",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/README.md": {
+    "mtime": 1789007268.7920644,
+    "ast_hash": "25acec825fe4dd9260606e18a752a175",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/tests/MANUAL.md": {
+    "mtime": 1788984803.1761553,
+    "ast_hash": "43faab1e333c01a89b796020d384b219",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/screenshots/overlay.png": {
+    "mtime": 1788985803.0498443,
+    "ast_hash": "c92715fa050db3d27c604ea7856c14ab",
+    "semantic_hash": ""
+  },
+  "/home/ogultra/Documents/search_everything_lightly/screenshots/preferences.png": {
+    "mtime": 1788985803.054034,
+    "ast_hash": "1c3c43298ef6de7b81a9a89fb6f97b45",
+    "semantic_hash": ""
+  }
+}

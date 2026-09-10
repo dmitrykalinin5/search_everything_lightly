@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="search-everything-lightly">
+  <schema id="org.gnome.shell.extensions.search-everything-lightly"
+          path="/org/gnome/shell/extensions/search-everything-lightly/">
+    <key name="toggle-search" type="as">
+      <default>['&lt;Super&gt;space']</default>
+      <summary>Open or close file search</summary>
+      <description>Global keyboard shortcut for Search Everything Lightly.</description>
+    </key>
+  </schema>
+</schemalist>

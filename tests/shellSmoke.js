@@ -1,0 +1,202 @@
+// Test driver loaded ONLY into the disposable copy by run_shell_smoke.py.
+import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import Shell from 'gi://Shell';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+
+function delay(ms) {
+    return new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+        resolve();
+        return GLib.SOURCE_REMOVE;
+    }));
+}
+
+async function until(condition, message) {
+    for (let attempt = 0; attempt < 150; attempt++) {
+        if (condition())
+            return;
+        await delay(50);
+    }
+    throw new Error(message);
+}
+
+function assert(value, message) {
+    if (!value)
+        throw new Error(message);
+}
+
+function key(overlay, symbol, modifiers = 0) {
+    overlay._keyPressed({type: () => Clutter.EventType.KEY_PRESS,
+        get_key_symbol: () => symbol, get_state: () => modifiers});
+}
+
+function hotkey(keyboard) {
+    const keys = [Clutter.KEY_Control_L, Clutter.KEY_Super_L, Clutter.KEY_space];
+    for (const symbol of keys)
+        keyboard.notify_keyval(GLib.get_monotonic_time(), symbol, Clutter.KeyState.PRESSED);
+    for (const symbol of keys.reverse())
+        keyboard.notify_keyval(GLib.get_monotonic_time(), symbol, Clutter.KeyState.RELEASED);
+}
+
+async function screenshot(path) {
+    const stream = Gio.File.new_for_path(path).replace(null, false, Gio.FileCreateFlags.NONE, null);
+    await new Shell.Screenshot().screenshot(false, stream);
+    stream.close(null);
+}
+
+export async function run(extension) {
+    const root = GLib.getenv('SEL_SMOKE_ROOT');
+    const checks = [];
+    let error = null;
+    let keyboard = null;
+    try {
+        await until(() => !Main.layoutManager._startingUp, 'Shell startup timed out');
+        Main.overview.hide();
+        Main.welcomeDialog?.close();
+        new Gio.Settings({schema_id: 'org.gnome.desktop.interface'}).set_boolean('enable-animations', false);
+        await delay(300);
+        const engine = extension._engine;
+        const overlay = extension._overlay;
+        assert(overlay, 'Extension did not construct the overlay');
+        engine._database = `${root}/test.db`;
+        extension._settings.set_strv('toggle-search', ['<Control><Super>space']);
+        keyboard = Clutter.get_default_backend().get_default_seat()
+            .create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+        checks.push('extension enable and GSettings shortcut change');
+        await delay(100);
+        hotkey(keyboard);
+        await until(() => overlay._isOpen, 'Global shortcut did not open the overlay');
+        assert(overlay._isOpen && Main.modalCount === 1, 'Modal did not open');
+        await delay(150);
+        assert(global.stage.key_focus === overlay._entry.clutter_text, 'Entry did not receive focus');
+        checks.push('overlay open and initial focus');
+        overlay._entry.set_text('physics report');
+        await until(() => overlay._items.length === 50, `Search results missing: ${overlay._status.text}`);
+        await delay(200);
+        assert(overlay._selected === 0, 'First result is not selected');
+        const [width, height] = overlay._dialog.contentLayout.get_transformed_size();
+        checks.push(`UI rendered at ${width} × ${height}`);
+        const first = overlay._items[0];
+        const child = first.get_child();
+        const labels = child.get_child_at_index(1);
+        assert(child.x < 30 && labels.height >= 30 && first.height >= 60,
+            `Result layout is cramped: child x=${child.x}, text height=${labels.height}, row height=${first.height}`);
+        await screenshot(`${root}/overlay.png`);
+        assert(width >= 600 && width <= 800, `Overlay width outside 600–800: ${width}`);
+        for (let i = 0; i < 49; i++)
+            key(overlay, Clutter.KEY_Down);
+        assert(overlay._selected === 49 && overlay._scroll.vadjustment.value > 0,
+            'Keyboard navigation did not scroll to the last result');
+        key(overlay, Clutter.KEY_Up);
+        assert(overlay._selected === 48, 'Up did not change selection');
+        key(overlay, Clutter.KEY_l, Clutter.ModifierType.CONTROL_MASK);
+        key(overlay, Clutter.KEY_a, Clutter.ModifierType.CONTROL_MASK);
+        assert(overlay._entry.clutter_text.get_selection() === 'physics report', 'Ctrl+A failed');
+        checks.push('50 real results, arrow navigation, scrolling, Ctrl+L and Ctrl+A');
+        overlay._select(0);
+        const firstPath = overlay._items[0].path;
+        const openedUri = Gio.File.new_for_path(`${root}/opened-uri`);
+        for (const [modifier, expected] of [[0, firstPath],
+            [Clutter.ModifierType.CONTROL_MASK, GLib.path_get_dirname(firstPath)]]) {
+            key(overlay, Clutter.KEY_Return, modifier);
+            await until(() => !overlay._isOpen && openedUri.query_exists(null), 'Enter did not launch the test handler');
+            const [, data] = openedUri.load_contents(null);
+            assert(Gio.File.new_for_commandline_arg(new TextDecoder().decode(data))
+                .equal(Gio.File.new_for_path(expected)), 'Wrong location launched');
+            openedUri.delete(null);
+            overlay.toggle();
+            overlay._entry.set_text('physics report');
+            await until(() => overlay._items.length === 50, 'Results did not return');
+        }
+        checks.push('Enter and Ctrl+Enter launch the correct URI and close the overlay');
+        let shown = null;
+        let rejectReveal = false;
+        const manager = Gio.DBusExportedObject.wrapJSObject(
+            '<node><interface name="org.freedesktop.FileManager1"><method name="ShowItems">' +
+            '<arg type="as" direction="in"/><arg type="s" direction="in"/>' +
+            '</method></interface></node>', {
+                ShowItems(uris) {
+                    if (rejectReveal)
+                        throw new Error('Reveal intentionally unavailable in this test');
+                    shown = uris[0];
+                },
+            });
+        manager.export(Gio.DBus.session, '/org/freedesktop/FileManager1');
+        let owner;
+        await new Promise(resolve => {
+            owner = Gio.bus_own_name_on_connection(Gio.DBus.session, 'org.freedesktop.FileManager1',
+                Gio.BusNameOwnerFlags.NONE, resolve, null);
+        });
+        try {
+            key(overlay, Clutter.KEY_Return, Clutter.ModifierType.SHIFT_MASK);
+            await until(() => !overlay._isOpen, 'Reveal did not close the overlay');
+            assert(shown === GLib.filename_to_uri(firstPath, null), 'FileManager1 received the wrong URI');
+            rejectReveal = true;
+            overlay.toggle();
+            overlay._entry.set_text('physics report');
+            await until(() => overlay._items.length === 50, 'Results did not return');
+            key(overlay, Clutter.KEY_Return, Clutter.ModifierType.SHIFT_MASK);
+            await until(() => !overlay._isOpen && openedUri.query_exists(null), 'Reveal fallback did not launch');
+            const [, data] = openedUri.load_contents(null);
+            assert(Gio.File.new_for_commandline_arg(new TextDecoder().decode(data))
+                .equal(Gio.File.new_for_path(GLib.path_get_dirname(firstPath))),
+                'Reveal fallback opened the wrong directory');
+            openedUri.delete(null);
+        } finally {
+            manager.unexport();
+            Gio.bus_unown_name(owner);
+        }
+        checks.push('Shift+Enter uses FileManager1 and falls back to the parent directory');
+        overlay.toggle();
+        await overlay._activate(`${root}/no-such-file`);
+        assert(overlay._isOpen && overlay._status.text.length > 0 && overlay._action === null,
+            'Failed activation did not restore the dialog');
+        key(overlay, Clutter.KEY_Escape);
+        assert(!overlay._isOpen && Main.modalCount === 0, 'Escape left a modal grab');
+        checks.push('opening a deleted file reports an error; Escape releases the grab');
+        for (let i = 0; i < 10; i++) {
+            overlay.toggle();
+            assert(overlay._entry.get_text() === '', 'New open did not clear the query');
+            overlay._entry.set_text('physics');
+            overlay.close();
+        }
+        assert(overlay._debounceId === 0 && engine._active === null, 'Close leaked a search');
+        checks.push('10 rapid open/search/close cycles');
+        hotkey(keyboard);
+        await until(() => overlay._isOpen, 'Global shortcut stopped working');
+        hotkey(keyboard);
+        await until(() => !overlay._isOpen, 'Global shortcut did not toggle closed');
+        checks.push('global shortcut toggles the modal closed');
+        overlay.toggle();
+        overlay._entry.set_text('physics');
+        extension.disable();
+        await delay(200);
+        assert(Main.modalCount === 0 && engine._active === null && !extension._overlay,
+            'Disable leaked resources');
+        extension.enable();
+        extension._overlay.toggle();
+        assert(extension._overlay._isOpen, 'Enable after disable failed');
+        extension._overlay.close();
+        checks.push('disable during debounce and clean re-enable');
+        assert(Main.extensionManager.openExtensionPrefs(extension.uuid, '', {}), 'Prefs not advertised');
+        await until(() => global.get_window_actors().some(actor =>
+            actor.meta_window.get_title()?.includes('Search Everything Lightly')), 'Preferences did not open');
+        await until(() => global.get_window_actors().some(actor =>
+            actor.meta_window.get_title()?.includes('Search Everything Lightly') &&
+            actor.scale_x === 1 && actor.scale_y === 1 && actor.opacity === 255), 'Preferences still animating');
+        await delay(500);
+        await screenshot(`${root}/preferences.png`);
+        for (const actor of global.get_window_actors()) {
+            if (actor.meta_window.get_title()?.includes('Search Everything Lightly'))
+                actor.meta_window.delete(global.get_current_time());
+        }
+        checks.push('real GTK preferences window opens');
+        extension.disable();
+    } catch (caught) {
+        error = `${caught}\n${caught.stack}`;
+    } finally {
+        keyboard?.run_dispose();
+    }
+    GLib.file_set_contents(`${root}/result.json`, JSON.stringify({success: error === null, checks, error}));
+}

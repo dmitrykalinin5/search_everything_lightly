@@ -1,0 +1,6 @@
+/build/
+/dist/
+/schemas/gschemas.compiled
+/locale/
+__pycache__/
+*.pyc
