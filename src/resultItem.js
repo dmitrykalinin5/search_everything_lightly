@@ -11,13 +11,13 @@ import {abbreviatePath, displayText} from './query.js';
 export const ResultItem = GObject.registerClass(
 class ResultItem extends St.Button {
     _init(path, onActivate, onSelect) {
-        super._init({style_class: 'button flat sel-result', can_focus: true,
+        super._init({style_class: 'sel-result', can_focus: true,
             reactive: true, track_hover: true, x_expand: true});
         this.path = path;
         this._cancellable = new Gio.Cancellable();
         const box = new St.BoxLayout({style_class: 'sel-result-content',
             x_expand: true, y_expand: true});
-        this._icon = new St.Icon({icon_name: 'text-x-generic-symbolic', icon_size: 32,
+        this._icon = new St.Icon({icon_name: 'text-x-generic-symbolic', icon_size: 24,
             y_align: Clutter.ActorAlign.CENTER});
         box.add_child(this._icon);
         const text = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL,

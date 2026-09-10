@@ -13,11 +13,15 @@ with tempfile.TemporaryDirectory(prefix='sel-tests-') as folder:
              'line\nbreak.txt', 'literal[a]*?.txt', 'literalXaZZZ.txt',
              'back\\slash.txt', '-leading-option.txt', '.hidden-report.txt',
              "quote'\" $(touch SEL_INJECTION).txt", 'removed-report.txt']
+    names += ['a.js', 'я.js', '😀.js', 'ab.js', 'one.js', 'one-more.JS',
+              'someone.js', '.js', 'one.js.backup', 'one*.js']
     for name in names:
         (files / name).touch()
     for index in range(120):
         (files / f'many-results-{index:03}.txt').touch()
     (files / 'folder-result').mkdir()
+    (files / 'nested.js').mkdir()
+    (files / 'nested.js' / 'not-javascript.txt').touch()
     database = work / 'test.db'
     subprocess.run(['updatedb', '--database-root', str(files), '--output', str(database),
                     '--prunepaths', '', '--prunefs', '', '--prunenames', '',

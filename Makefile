@@ -1,4 +1,4 @@
-UUID := search-everything-lightly@ogultra
+UUID := search_everything_lightly@dmitrykalinin5.github.com
 DOMAIN := search-everything-lightly
 DATA_HOME := $(if $(XDG_DATA_HOME),$(XDG_DATA_HOME),$(HOME)/.local/share)
 EXTENSION_DIR := $(DATA_HOME)/gnome-shell/extensions/$(UUID)

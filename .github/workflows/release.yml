@@ -20,36 +20,17 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y zip gettext libglib2.0-bin
+          sudo apt-get install -y gettext libglib2.0-bin
 
       - name: Validate metadata.json
         run: |
           python3 -m json.tool metadata.json > /dev/null
 
-      - name: Compile GSettings schemas
-        run: |
-          if [ -d schemas ]; then
-            glib-compile-schemas schemas
-          fi
-
       - name: Build extension archive
-        run: |
-          VERSION="${GITHUB_REF_NAME}"
-          ARCHIVE="search-everything-lightly-${VERSION}.zip"
-
-          zip -r "$ARCHIVE" \
-            extension.js \
-            prefs.js \
-            stylesheet.css \
-            metadata.json \
-            schemas \
-            -x "*.git*" \
-            -x "*/__pycache__/*"
-
-          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+        run: python3 scripts/build.py
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.ARCHIVE }}
+          files: dist/*.shell-extension.zip
           generate_release_notes: true

@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Search Everything Lightly 0.1.0\n"
+"Project-Id-Version: Search Everything Lightly 0.2.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-09 23:00+0300\n"
 "PO-Revision-Date: 2026-09-09 23:00+0300\n"
@@ -12,17 +12,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-msgid "Search files..."
-msgstr "Поиск файлов…"
-
-msgid "↑↓ Select   Enter Open   Ctrl+Enter Folder   Shift+Enter Reveal   Esc Close"
-msgstr "↑↓ Выбор   Enter Открыть   Ctrl+Enter Папка   Shift+Enter Показать   Esc Закрыть"
+msgid "Search apps and files..."
+msgstr "Поиск приложений и файлов…"
 
 msgid "plocate is not installed.\nInstall it to use Search Everything Lightly.\nFedora: sudo dnf install plocate"
 msgstr "plocate не установлен.\nУстановите его для работы Search Everything Lightly.\nFedora: sudo dnf install plocate"
 
-msgid "Type at least 3 characters to search."
-msgstr "Введите не менее 3 символов для поиска."
+msgid "Type to search."
+msgstr "Начните вводить запрос."
+
+msgid "Could not launch this application."
+msgstr "Не удалось запустить приложение."
 
 msgid "The query is too long or contains an invalid character."
 msgstr "Запрос слишком длинный или содержит недопустимый символ."

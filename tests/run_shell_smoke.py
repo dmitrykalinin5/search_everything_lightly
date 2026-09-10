@@ -10,7 +10,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parent.parent
-UUID = 'search-everything-lightly@ogultra'
+UUID = 'search_everything_lightly@dmitrykalinin5.github.com'
 
 
 def session(work):
@@ -77,6 +77,11 @@ def main():
         '[Desktop Entry]\nType=Application\nName=Test URI recorder\n'
         f'Exec=/usr/bin/python3 {recorder} %u\nNoDisplay=true\n'
         'MimeType=application/pdf;inode/directory;\n')
+    for index, (name, icon) in enumerate([('Physics Notes', 'accessories-text-editor'),
+                                         ('Physics Files', 'system-file-manager')]):
+        (applications / f'sel-demo-{index}.desktop').write_text(
+            f'[Desktop Entry]\nType=Application\nName={name}\nIcon={icon}\n'
+            f'Exec=/usr/bin/python3 {recorder} app-{index}\nCategories=Utility;\n')
     (work / 'config/mimeapps.list').write_text(
         '[Default Applications]\napplication/pdf=sel-test.desktop\n'
         'inode/directory=sel-test.desktop\n')

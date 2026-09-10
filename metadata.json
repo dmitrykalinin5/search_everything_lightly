@@ -1,10 +1,10 @@
 {
-  "uuid": "search-everything-lightly@ogultra",
+  "uuid": "search_everything_lightly@dmitrykalinin5.github.com",
   "name": "Search Everything Lightly",
-  "description": "Fast, local file and folder search in a keyboard-driven overlay. Requires plocate and its index.",
+  "description": "Search apps, files and folders in a compact overlay. File search supports wildcard patterns and requires plocate.",
   "shell-version": ["49"],
-  "version": 1,
-  "version-name": "0.1.0",
+  "version": 2,
+  "version-name": "0.2.0",
   "settings-schema": "org.gnome.shell.extensions.search-everything-lightly",
   "gettext-domain": "search-everything-lightly"
 }

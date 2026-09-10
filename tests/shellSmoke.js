@@ -80,14 +80,22 @@ export async function run(extension) {
         const first = overlay._items[0];
         const child = first.get_child();
         const labels = child.get_child_at_index(1);
-        assert(child.x < 30 && labels.height >= 30 && first.height >= 60,
+        assert(child.x < 30 && labels.height >= 30 && first.height >= 44,
             `Result layout is cramped: child x=${child.x}, text height=${labels.height}, row height=${first.height}`);
         await screenshot(`${root}/overlay.png`);
-        assert(width >= 600 && width <= 800, `Overlay width outside 600–800: ${width}`);
+        assert(width >= 500 && width <= 620 && height < 480, `Overlay is not compact: ${width}x${height}`);
+        assert(!overlay._dialog._lightbox, 'Search still dims the desktop');
+        assert(overlay._scroll.vscrollbar_visible && !overlay._scroll.overlay_scrollbars,
+            'Overflow scrollbar is not visible');
         for (let i = 0; i < 49; i++)
             key(overlay, Clutter.KEY_Down);
         assert(overlay._selected === 49 && overlay._scroll.vadjustment.value > 0,
             'Keyboard navigation did not scroll to the last result');
+        await delay(150);
+        const [, scrollTop] = overlay._scroll.get_transformed_position();
+        const [, lastTop] = overlay._items[49].get_transformed_position();
+        assert(lastTop >= scrollTop && lastTop + overlay._items[49].height <=
+            scrollTop + overlay._scroll.height + 1, 'Selected result is outside the visible scroll area');
         key(overlay, Clutter.KEY_Up);
         assert(overlay._selected === 48, 'Up did not change selection');
         key(overlay, Clutter.KEY_l, Clutter.ModifierType.CONTROL_MASK);
@@ -168,6 +176,57 @@ export async function run(extension) {
         hotkey(keyboard);
         await until(() => !overlay._isOpen, 'Global shortcut did not toggle closed');
         checks.push('global shortcut toggles the modal closed');
+        overlay.toggle();
+        overlay._entry.set_text('physics');
+        await until(() => overlay._appCount === 2 && overlay._files.get_children().length === 50,
+            'Applications and files were not combined');
+        assert(overlay._items[0].app && overlay._items[overlay._appCount].path,
+            'Applications are not above files');
+        await delay(200);
+        await screenshot(`${root}/overlay-apps.png`);
+        key(overlay, Clutter.KEY_Right);
+        assert(overlay._selected === 1, 'Right did not move between application tiles');
+        key(overlay, Clutter.KEY_Down);
+        assert(overlay._selected === 2, 'Down did not enter the file list');
+        key(overlay, Clutter.KEY_Up);
+        assert(overlay._selected === 1, 'Up did not return to applications');
+        overlay._select(51);
+        assert(overlay._scroll.vadjustment.value > 0, 'Combined results did not scroll');
+        overlay._select(0);
+        assert(overlay._scroll.vadjustment.value === 0, 'Application navigation did not scroll back to the top');
+        checks.push('application tiles precede files with shared scrolling and arrow navigation');
+        overlay._entry.set_text('p');
+        await until(() => overlay._appCount > 0 && overlay._files.get_children().length === 50,
+            'One-character input did not search apps and files');
+        overlay._entry.set_text('*.pdf');
+        await until(() => overlay._appCount === 0 && overlay._files.get_children().length === 50,
+            'File mask did not return the PDFs');
+        checks.push('one-character input and filename masks work in the overlay');
+        overlay._entry.set_text('physics');
+        await until(() => overlay._appCount === 2, 'Application tiles did not return');
+        overlay._select(overlay._items.findIndex(item => item.app?.get_id() === 'sel-demo-0.desktop'));
+        key(overlay, Clutter.KEY_Return);
+        await until(() => !overlay._isOpen && openedUri.query_exists(null), 'Application did not launch with Enter');
+        const [, appData] = openedUri.load_contents(null);
+        assert(new TextDecoder().decode(appData) === 'app-0', 'Wrong application launched');
+        openedUri.delete(null);
+        const command = engine._command;
+        try {
+            engine._command = `${root}/missing-plocate`;
+            overlay.toggle();
+            overlay._entry.set_text('physics');
+            await until(() => overlay._appCount === 2 && overlay._status.text.includes('plocate'),
+                'Missing plocate prevented application search');
+            const app = overlay._items.find(item => item.app?.get_id() === 'sel-demo-1.desktop');
+            app.emit('clicked', 1);
+            await until(() => !overlay._isOpen && openedUri.query_exists(null), 'Application click did not launch');
+            const [, clickedData] = openedUri.load_contents(null);
+            assert(new TextDecoder().decode(clickedData) === 'app-1', 'Wrong application clicked');
+            openedUri.delete(null);
+        } finally {
+            engine._command = command;
+        }
+        checks.push('apps launch with Enter and click even when plocate is unavailable');
         overlay.toggle();
         overlay._entry.set_text('physics');
         extension.disable();
