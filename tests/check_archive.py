@@ -8,7 +8,7 @@ import tempfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
-UUID = 'search-everything-lightly@ogultra'
+UUID = 'search_everything_lightly@dmitrykalinin5.github.com'
 archive = ROOT / 'dist' / f'{UUID}.shell-extension.zip'
 with zipfile.ZipFile(archive) as bundle:
     names = bundle.namelist()

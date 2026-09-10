@@ -1,13 +1,18 @@
 # Graph Report - search_everything_lightly  (2026-09-10)
 
 ## Corpus Check
-- 22 files · ~60,747 words
+- 23 files · ~70,233 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 248 nodes · 300 edges · 41 communities (29 shown, 12 thin omitted)
+- 258 nodes · 327 edges · 41 communities (29 shown, 12 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `40aef972`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Community 0|Community 0]]
@@ -50,27 +55,31 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `Search Everything Lightly — техническое задание` - 49 edges
-2. `SearchOverlay` - 14 edges
+2. `SearchOverlay` - 15 edges
 3. `Search Everything Lightly` - 11 edges
 4. `run()` - 8 edges
 5. `19. Настройки — версия 0.2+` - 8 edges
-6. `SearchEngine` - 7 edges
-7. `openPath()` - 7 edges
-8. `25. Ответственность модулей` - 7 edges
-9. `45. Roadmap` - 7 edges
-10. `queryState()` - 6 edges
+6. `hasWildcards()` - 7 edges
+7. `rankResults()` - 7 edges
+8. `SearchEngine` - 7 edges
+9. `openPath()` - 7 edges
+10. `25. Ответственность модулей` - 7 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `test()` --calls--> `run()`  [INFERRED]
   tests/integration.js → tests/shellSmoke.js
 - `rankResults()` --calls--> `queryTerms()`  [EXTRACTED]
   src/ranking.js → src/query.js
+- `rankResults()` --calls--> `hasWildcards()`  [EXTRACTED]
+  src/ranking.js → src/query.js
+- `findApplications()` --calls--> `hasWildcards()`  [EXTRACTED]
+  src/applicationItem.js → src/query.js
 
 ## Communities (41 total, 12 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.13
-Nodes (13): SearchEverythingLightly, abbreviatePath(), buildArguments(), displayText(), queryState(), queryTerms(), normalize(), rankResults() (+5 more)
+Cohesion: 0.12
+Nodes (16): SearchEverythingLightly, ApplicationItem, findApplications(), abbreviatePath(), buildArguments(), displayText(), hasWildcards(), queryState() (+8 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.08
@@ -78,10 +87,10 @@ Nodes (23): 12. Работа с процессами, 14. Обновление �
 
 ### Community 2 - "Community 2"
 Cohesion: 0.08
-Nodes (23): code:bash (sudo dnf install plocate gettext make python3 glib2), code:bash (make disable), code:bash (journalctl --user -f -o cat /usr/bin/gnome-shell), code:bash (make enable), code:bash (gnome-extensions install --force dist/search-everything-ligh), code:bash (sudo updatedb), code:bash (systemctl status plocate-updatedb.timer), code:bash (plocate --ignore-case --existing --limit 10 -- Documents) (+15 more)
+Nodes (26): code:bash (sudo dnf install plocate gettext make python3 glib2), code:bash (make build), code:bash (make disable), code:bash (journalctl --user -f -o cat /usr/bin/gnome-shell), code:bash (make enable), code:bash (gnome-extensions install --force dist/search_everything_ligh), code:bash (gnome-extensions disable search-everything-lightly@ogultra), code:bash (sudo updatedb) (+18 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.17
+Cohesion: 0.15
 Nodes (14): checkFile(), launch(), openPath(), reveal(), assert(), broken, done, engine (+6 more)
 
 ### Community 4 - "Community 4"
@@ -169,7 +178,7 @@ Cohesion: 0.67
 Nodes (3): 20. Фильтры — версия 0.3+, code:text (ext:pdf report), code:text (type:file)
 
 ## Knowledge Gaps
-- **131 isolated node(s):** `uuid`, `name`, `description`, `shell-version`, `version` (+126 more)
+- **129 isolated node(s):** `uuid`, `name`, `description`, `shell-version`, `version` (+124 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -177,15 +186,15 @@ Nodes (3): 20. Фильтры — версия 0.3+, code:text (ext:pdf report),
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Search Everything Lightly — техническое задание` connect `Community 1` to `Community 4`, `Community 7`, `Community 8`, `Community 11`, `Community 12`, `Community 13`, `Community 15`, `Community 16`, `Community 17`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 23`, `Community 24`, `Community 25`, `Community 26`, `Community 28`, `Community 29`, `Community 30`, `Community 31`, `Community 32`, `Community 33`, `Community 34`, `Community 35`?**
-  _High betweenness centrality (0.255) - this node is a cross-community bridge._
+  _High betweenness centrality (0.235) - this node is a cross-community bridge._
 - **Why does `19. Настройки — версия 0.2+` connect `Community 4` to `Community 1`?**
-  _High betweenness centrality (0.047) - this node is a cross-community bridge._
+  _High betweenness centrality (0.044) - this node is a cross-community bridge._
 - **Why does `8. UI / UX` connect `Community 7` to `Community 1`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+  _High betweenness centrality (0.030) - this node is a cross-community bridge._
 - **What connects `uuid`, `name`, `description` to the rest of the system?**
-  _131 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _129 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.13 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.08 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**

@@ -9,6 +9,6 @@
 - [x] CHK007 — Automated logic, GJS and isolated GNOME Shell checks executed.
 - [x] CHK008 — Runtime archive excludes tests, graphs and private test hooks.
 - [ ] CHK009 — Physical multi-monitor/scaling/session-lock tests and live clean install still pending.
-- [ ] CHK010 — Public URL, UUID ownership and extensions.gnome.org publication review still pending.
+- [ ] CHK010 — Public URL and extensions.gnome.org publication review still pending; publication UUID selected by the user.
 
 The optional skill templates were absent from the installed skill package. This checklist follows its documented CHK format; no claim is made that an unavailable template validator ran.

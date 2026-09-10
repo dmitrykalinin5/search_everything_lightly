@@ -10,7 +10,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 metadata = json.loads((ROOT / 'metadata.json').read_text())
-assert metadata['uuid'] == 'search-everything-lightly@ogultra'
+assert metadata['uuid'] == 'search_everything_lightly@dmitrykalinin5.github.com'
 assert metadata['shell-version'] == ['49']
 files = [ROOT / 'extension.js', ROOT / 'prefs.js', *sorted((ROOT / 'src').glob('*.js')),
          *sorted((ROOT / 'tests').glob('*.js'))]

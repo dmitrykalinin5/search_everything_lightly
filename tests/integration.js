@@ -39,13 +39,28 @@ await test('real plocate: Cyrillic, emoji, hidden files and folders', async () =
 await test('real plocate: NUL-delimited paths retain embedded newlines', async () => {
     assert((await engine.search('break'))[0].endsWith('/line\nbreak.txt'), 'Lost newline');
 });
-await test('real plocate: glob characters, quotes, backslashes and shell syntax are literal', async () => {
-    for (const query of ['literal[a]*?', 'back\\slash', '-leading', "quote'\"", '$(touch SEL_INJECTION)'])
+await test('real plocate: escaped glob characters, quotes, backslashes and shell syntax are literal', async () => {
+    for (const query of ['literal[a]\\*\\?', 'back\\slash', '-leading', "quote'\"", '$(touch SEL_INJECTION)'])
         assert((await engine.search(query)).length === 1, query);
 });
 await test('real plocate: deleted entries excluded, empty query and no matches', async () => {
-    for (const query of ['removed-report', 'no-such-file-2938', '', 'ab'])
+    for (const query of ['removed-report', 'no-such-file-2938', ''])
         assert((await engine.search(query)).length === 0, query);
+});
+await test('real plocate: one-character queries find files', async () => {
+    assert((await engine.search('я')).length > 0, 'Single Cyrillic character did not search');
+    assert((await engine.search('a')).some(path => path.endsWith('/a.js')), 'Single Latin character did not search');
+});
+await test('real plocate: star, question mark, prefix masks and escaping', async () => {
+    const names = async query => (await engine.search(query)).map(path => GLib.path_get_basename(path)).sort();
+    const allJs = await names('*.js');
+    assert(allJs.includes('one-more.JS') && !allJs.includes('not-javascript.txt') &&
+        !allJs.includes('one.js.backup'), String(allJs));
+    assert(JSON.stringify(await names('?.js')) === JSON.stringify(['a.js', 'я.js', '😀.js'].sort()),
+        'Question mark did not match exactly one Unicode character');
+    assert(JSON.stringify(await names('one*.js')) === JSON.stringify(['one.js', 'one-more.JS', 'one*.js'].sort()),
+        'Prefix mask matched unrelated names');
+    assert(JSON.stringify(await names('one\\*.js')) === JSON.stringify(['one*.js']), 'Escaped star not literal');
 });
 await test('real plocate: 120 candidates limited to 50 results', async () => {
     assert((await engine.search('many-results')).length === 50, 'Incorrect result limit');

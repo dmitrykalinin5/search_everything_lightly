@@ -36,6 +36,18 @@
     "kind": "function"
   },
   {
+    "file": "src/applicationItem.js",
+    "name": "findApplications()",
+    "kind": "function",
+    "line": 11
+  },
+  {
+    "file": "src/applicationItem.js",
+    "name": "ApplicationItem",
+    "kind": "class",
+    "line": 23
+  },
+  {
     "file": "src/fileActions.js",
     "line": 5,
     "name": "checkFile()",
@@ -73,19 +85,31 @@
   },
   {
     "file": "src/query.js",
-    "line": 18,
+    "name": "parseTerm()",
+    "kind": "function",
+    "line": 18
+  },
+  {
+    "file": "src/query.js",
+    "name": "hasWildcards()",
+    "kind": "function",
+    "line": 35
+  },
+  {
+    "file": "src/query.js",
+    "line": 39,
     "name": "buildArguments()",
     "kind": "function"
   },
   {
     "file": "src/query.js",
-    "line": 30,
+    "line": 53,
     "name": "abbreviatePath()",
     "kind": "function"
   },
   {
     "file": "src/query.js",
-    "line": 36,
+    "line": 59,
     "name": "displayText()",
     "kind": "function"
   },
@@ -103,19 +127,19 @@
   },
   {
     "file": "src/ranking.js",
-    "line": 21,
+    "line": 23,
     "name": "locationRank()",
     "kind": "function"
   },
   {
     "file": "src/ranking.js",
-    "line": 31,
+    "line": 33,
     "name": "rankResults()",
     "kind": "function"
   },
   {
     "file": "src/resultItem.js",
-    "line": 12,
+    "line": 11,
     "name": "ResultItem",
     "kind": "class"
   },
@@ -127,15 +151,15 @@
   },
   {
     "file": "src/searchEngine.js",
-    "line": 9,
-    "name": ".constructor()",
-    "kind": "function"
-  },
-  {
-    "file": "src/searchEngine.js",
     "line": 15,
     "name": "SearchEngine",
     "kind": "class"
+  },
+  {
+    "file": "src/searchEngine.js",
+    "line": 16,
+    "name": ".constructor()",
+    "kind": "function"
   },
   {
     "file": "src/searchEngine.js",
@@ -163,79 +187,85 @@
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 16,
+    "line": 18,
     "name": "SearchOverlay",
     "kind": "class"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 17,
+    "line": 19,
     "name": ".constructor()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 60,
+    "line": 66,
     "name": ".toggle()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 85,
+    "line": 93,
     "name": ".close()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 92,
+    "line": 100,
     "name": ".destroy()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 104,
+    "line": 114,
     "name": "._cancelPending()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 120,
+    "line": 130,
     "name": "._clearResults()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 128,
+    "line": 141,
     "name": "._setStatus()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 133,
+    "line": 146,
     "name": "._queryChanged()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 162,
+    "line": 167,
     "name": "._search()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 189,
+    "line": 208,
     "name": "._select()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 206,
+    "line": 218,
     "name": "._keyPressed()",
     "kind": "function"
   },
   {
     "file": "src/searchOverlay.js",
-    "line": 231,
+    "name": "._activateApplication()",
+    "kind": "function",
+    "line": 255
+  },
+  {
+    "file": "src/searchOverlay.js",
+    "line": 264,
     "name": "._activate()",
     "kind": "function"
   },

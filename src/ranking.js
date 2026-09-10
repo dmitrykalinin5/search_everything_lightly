@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import {queryTerms} from './query.js';
+import {hasWildcards, queryTerms} from './query.js';
 
 function normalize(text) {
     return text.normalize('NFC').toLowerCase();
 }
 
-function matchRank(name, query, terms) {
+function matchRank(name, query, terms, wildcard) {
+    if (wildcard)
+        return 0; // plocate has already matched the full basename against the mask.
     if (name === query)
         return 0;
     const dot = name.lastIndexOf('.');
@@ -31,9 +33,10 @@ function locationRank(path, home) {
 export function rankResults(paths, query, home, limit) {
     const normalized = normalize(query.trim());
     const terms = queryTerms(normalized);
+    const wildcard = hasWildcards(query);
     return [...new Set(paths)].map(path => {
         const name = normalize(path.slice(path.lastIndexOf('/') + 1));
-        return {path, name, match: matchRank(name, normalized, terms),
+        return {path, name, match: matchRank(name, normalized, terms, wildcard),
             location: locationRank(path, home)};
     }).sort((a, b) => a.match - b.match || a.location - b.location ||
         a.name.localeCompare(b.name) || a.path.localeCompare(b.path))

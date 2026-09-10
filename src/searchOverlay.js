@@ -6,11 +6,13 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 
 import {DEBOUNCE_MS, MAX_QUERY_LENGTH, queryState} from './query.js';
 import {ResultItem} from './resultItem.js';
+import {ApplicationItem, findApplications} from './applicationItem.js';
 import {openPath} from './fileActions.js';
 
 export class SearchOverlay {
@@ -19,22 +21,24 @@ export class SearchOverlay {
         this._generation = 0;
         this._debounceId = 0;
         this._items = [];
+        this._appCount = 0;
+        this._appColumns = 4;
         this._selected = -1;
         this._isOpen = false;
         this._action = null;
         this._dialog = new ModalDialog.ModalDialog({styleClass: 'sel-dialog',
-            destroyOnClose: false, shouldFadeIn: false, shouldFadeOut: false});
+            shellReactive: true, destroyOnClose: false, shouldFadeIn: false, shouldFadeOut: false});
         this._dialog.accessible_name = 'Search Everything Lightly';
         this._dialog.buttonLayout.hide();
         const content = this._dialog.contentLayout;
         content.add_style_class_name('sel-content');
-        this._entry = new St.Entry({hint_text: _('Search files...'),
+        this._entry = new St.Entry({hint_text: _('Search apps and files...'),
             style_class: 'search-entry sel-entry', can_focus: true, x_expand: true});
         this._entry.set_primary_icon(new St.Icon({icon_name: 'edit-find-symbolic',
             style_class: 'search-entry-icon'}));
         this._entry.clutter_text.set_max_length(MAX_QUERY_LENGTH);
         this._entry.clutter_text.set_single_line_mode(true);
-        this._entry.accessible_name = _('Search files...');
+        this._entry.accessible_name = _('Search apps and files...');
         content.add_child(this._entry);
         this._status = new St.Label({style_class: 'sel-status'});
         this._status.clutter_text.line_wrap = true;
@@ -42,15 +46,17 @@ export class SearchOverlay {
         content.add_child(this._status);
         this._results = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL,
             style_class: 'sel-results', x_expand: true});
+        this._appGrid = new St.Widget({layout_manager: new Clutter.GridLayout({
+            column_spacing: 8, row_spacing: 8}), x_align: Clutter.ActorAlign.CENTER});
+        this._files = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL,
+            style_class: 'sel-files', x_expand: true});
+        this._results.add_child(this._appGrid);
+        this._results.add_child(this._files);
         this._scroll = new St.ScrollView({child: this._results,
-            overlay_scrollbars: true, x_expand: true,
+            style_class: 'sel-scroll', overlay_scrollbars: false, x_expand: true,
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC});
         content.add_child(this._scroll);
-        const footer = new St.Label({style_class: 'sel-footer',
-            text: _('↑↓ Select   Enter Open   Ctrl+Enter Folder   Shift+Enter Reveal   Esc Close')});
-        footer.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        content.add_child(footer);
         this._dialog.setInitialKeyFocus(this._entry.clutter_text);
         this._entry.clutter_text.connect('text-changed', () => this._queryChanged());
         this._dialog.connect('captured-event', (_actor, event) => this._keyPressed(event));
@@ -71,8 +77,10 @@ export class SearchOverlay {
             global.display.get_current_monitor();
         const area = Main.layoutManager.getWorkAreaForMonitor(monitor);
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-        this._dialog.contentLayout.set_style(`width: ${Math.min(680, area.width / scale - 64)}px;`);
-        this._scroll.set_style(`max-height: ${Math.min(420, area.height / scale * 0.5)}px;`);
+        const width = Math.min(560, area.width / scale - 64);
+        this._appColumns = Math.max(1, Math.min(4, Math.floor(width / 104)));
+        this._dialog.contentLayout.set_style(`width: ${width}px;`);
+        this._scroll.set_style(`max-height: ${Math.min(320, area.height / scale * 0.45)}px;`);
         this._isOpen = this._dialog.open();
         if (!this._isOpen)
             return;
@@ -98,6 +106,8 @@ export class SearchOverlay {
         this._status = null;
         this._scroll = null;
         this._results = null;
+        this._appGrid = null;
+        this._files = null;
         this._engine = null;
     }
 
@@ -118,8 +128,11 @@ export class SearchOverlay {
     }
 
     _clearResults() {
-        this._results.destroy_all_children();
+        this._appGrid.destroy_all_children();
+        this._appGrid.hide();
+        this._files.destroy_all_children();
         this._items = [];
+        this._appCount = 0;
         this._selected = -1;
         this._scroll.hide();
         this._scroll.vadjustment.value = 0;
@@ -136,17 +149,9 @@ export class SearchOverlay {
         if (!this._isOpen)
             return;
         const query = this._entry.get_text();
-        if (!this._engine.available) {
-            // Refresh dependency state when the overlay is reopened.
-            this._engine.available = GLib.find_program_in_path('plocate') !== null;
-            if (!this._engine.available) {
-                this._setStatus(_('plocate is not installed.\nInstall it to use Search Everything Lightly.\nFedora: sudo dnf install plocate'));
-                return;
-            }
-        }
         const state = queryState(query);
         if (state !== 'ready') {
-            this._setStatus(state === 'short' ? _('Type at least 3 characters to search.') :
+            this._setStatus(state === 'short' ? _('Type to search.') :
                 _('The query is too long or contains an invalid character.'));
             return;
         }
@@ -160,19 +165,33 @@ export class SearchOverlay {
     }
 
     async _search(query, generation) {
+        const apps = findApplications(query);
+        apps.forEach((app, index) => {
+            const item = new ApplicationItem(app, selectedApp => this._activateApplication(selectedApp),
+                () => this._select(index));
+            this._items.push(item);
+            this._appGrid.layout_manager.attach(item,
+                index % this._appColumns, Math.floor(index / this._appColumns), 1, 1);
+        });
+        this._appCount = apps.length;
+        this._appGrid.visible = apps.length > 0;
+        this._scroll.visible = apps.length > 0;
+        if (apps.length)
+            this._select(0);
         try {
             const paths = await this._engine.search(query);
             if (!this._isOpen || generation !== this._generation)
                 return;
-            this._setStatus(paths.length ? '' : _('No matching files. The index may need updating.'));
-            paths.forEach((path, index) => {
+            this._setStatus(paths.length || apps.length ? '' : _('No matching files. The index may need updating.'));
+            paths.forEach(path => {
+                const index = this._items.length;
                 const item = new ResultItem(path, selectedPath => this._activate(selectedPath),
                     () => this._select(index));
                 this._items.push(item);
-                this._results.add_child(item);
+                this._files.add_child(item);
             });
-            this._scroll.visible = paths.length > 0;
-            if (paths.length)
+            this._scroll.visible = this._items.length > 0;
+            if (this._selected < 0 && paths.length)
                 this._select(0);
         } catch (error) {
             if (!this._isOpen || generation !== this._generation || error.code === 'cancelled')
@@ -193,14 +212,7 @@ export class SearchOverlay {
         this._selected = Math.max(0, Math.min(index, this._items.length - 1));
         const item = this._items[this._selected];
         item.setSelected(true);
-        if (item.has_allocation()) {
-            const box = item.get_allocation_box();
-            const adjustment = this._scroll.vadjustment;
-            if (box.y1 < adjustment.value)
-                adjustment.value = box.y1;
-            else if (box.y2 > adjustment.value + adjustment.page_size)
-                adjustment.value = box.y2 - adjustment.page_size;
-        }
+        ensureActorVisibleInScrollView(this._scroll, item);
     }
 
     _keyPressed(event) {
@@ -212,10 +224,22 @@ export class SearchOverlay {
         if (key === Clutter.KEY_Escape) {
             this.close();
         } else if (key === Clutter.KEY_Up || key === Clutter.KEY_Down) {
-            this._select(this._selected + (key === Clutter.KEY_Down ? 1 : -1));
+            let next = this._selected + (key === Clutter.KEY_Down ? 1 : -1);
+            if (this._selected >= 0 && this._selected < this._appCount) {
+                next = key === Clutter.KEY_Down ?
+                    Math.min(this._selected + this._appColumns, this._appCount) :
+                    Math.max(0, this._selected - this._appColumns);
+            }
+            this._select(next);
+        } else if (!ctrl && this._selected >= 0 && this._selected < this._appCount &&
+            (key === Clutter.KEY_Left || key === Clutter.KEY_Right)) {
+            this._select(Math.max(0, Math.min(this._appCount - 1,
+                this._selected + (key === Clutter.KEY_Right ? 1 : -1))));
         } else if ([Clutter.KEY_Return, Clutter.KEY_KP_Enter, Clutter.KEY_ISO_Enter].includes(key)) {
             const item = this._items[this._selected];
-            if (item)
+            if (item?.app)
+                this._activateApplication(item.app);
+            else if (item)
                 this._activate(item.path, ctrl ? 'parent' : shift ? 'reveal' : 'open');
         } else if (ctrl && [Clutter.KEY_l, Clutter.KEY_L].includes(key)) {
             this._entry.grab_key_focus();
@@ -226,6 +250,15 @@ export class SearchOverlay {
             return Clutter.EVENT_PROPAGATE;
         }
         return Clutter.EVENT_STOP;
+    }
+
+    _activateApplication(app) {
+        try {
+            app.activate();
+            this.close();
+        } catch {
+            this._setStatus(_('Could not launch this application.'));
+        }
     }
 
     async _activate(path, action = 'open') {
