@@ -1,0 +1,55 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+.sel-dialog {
+    border-radius: 20px;
+}
+
+.sel-dialog .sel-content {
+    padding: 20px;
+    spacing: 14px;
+}
+
+.sel-entry {
+    min-height: 28px;
+    padding: 12px 16px;
+    border-radius: 12px;
+}
+
+.sel-results {
+    spacing: 4px;
+}
+
+.sel-result {
+    min-height: 40px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-align: left;
+    font-weight: normal;
+}
+
+.sel-result-content {
+    spacing: 14px;
+}
+
+.sel-result:selected {
+    background-color: -st-accent-color;
+    color: -st-accent-fg-color;
+}
+
+.sel-result-name {
+    font-weight: bold;
+}
+
+.sel-result-path {
+    font-size: 0.85em;
+    padding-top: 3px;
+    opacity: 0.7;
+}
+
+.sel-status {
+    padding: 16px 8px;
+}
+
+.sel-footer {
+    font-size: 0.8em;
+    opacity: 0.7;
+}
