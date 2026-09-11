@@ -4,7 +4,7 @@
   "description": "Search apps, files and folders in a compact overlay. File search supports glob patterns and regular expressions and requires plocate.",
   "shell-version": ["49"],
   "version": 3,
-  "version-name": "0.2.1",
+  "version-name": "0.2.2",
   "settings-schema": "org.gnome.shell.extensions.search-everything-lightly",
   "gettext-domain": "search-everything-lightly"
 }
