@@ -2,7 +2,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-import {buildArguments, queryState, RESULT_LIMIT} from './query.js';
+import {buildArguments, isRegexQuery, queryState, RESULT_LIMIT} from './query.js';
 import {rankResults} from './ranking.js';
 
 export class SearchError extends Error {
@@ -44,8 +44,8 @@ export class SearchEngine {
         const state = queryState(query);
         if (state === 'short')
             return [];
-        if (state === 'invalid')
-            throw new SearchError('invalid-query');
+        if (state !== 'ready')
+            throw new SearchError(state === 'invalid-pattern' ? 'invalid-pattern' : 'invalid-query');
 
         // Recheck so installing plocate does not require a Shell restart.
         this.available = GLib.find_program_in_path(this._command) !== null;
@@ -87,6 +87,8 @@ export class SearchEngine {
                 throw new SearchError('cancelled');
             const decoder = new TextDecoder();
             const errorOutput = decoder.decode(stderr.get_data()).trim();
+            if (isRegexQuery(query) && errorOutput.startsWith('Error when compiling regex'))
+                throw new SearchError('invalid-pattern');
             // plocate uses exit 1 for BOTH no matches and database errors.
             // stderr distinguishes them; do not log paths or queries.
             if (!process.get_if_exited() || process.get_exit_status() > 1 || errorOutput)

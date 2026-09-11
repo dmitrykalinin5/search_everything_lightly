@@ -215,7 +215,16 @@ export async function run(extension) {
         overlay._entry.set_text('*.pdf');
         await until(() => overlay._appCount === 0 && overlay._files.get_children().length === 50,
             'File mask did not return the PDFs');
-        checks.push('one-character input and filename masks work in the overlay');
+        overlay._entry.set_text('project_[12].docx');
+        await until(() => overlay._appCount === 0 && overlay._files.get_children().length === 2,
+            'Bracket glob did not return the expected files');
+        overlay._entry.set_text('re:^report-[0-9]+\\.log$');
+        await until(() => overlay._appCount === 0 && overlay._files.get_children().length === 2,
+            'Regular expression did not return the expected files');
+        overlay._entry.set_text('re:[');
+        await until(() => overlay._items.length === 0 && overlay._status.visible,
+            'Invalid regular expression did not show an error');
+        checks.push('one-character input, standard globs and regular expressions work in the overlay');
         for (const query of ['physics report 000', '', 'no-such-result-2938', 'physics', 'p', '*.pdf']) {
             overlay._entry.set_text(query);
             await delay(30);
