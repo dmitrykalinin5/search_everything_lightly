@@ -144,19 +144,42 @@ export class SearchOverlay {
         this._status.visible = text.length > 0;
     }
 
+    _replaceResults(apps, paths) {
+        this._clearResults();
+        apps.forEach((app, index) => {
+            const item = new ApplicationItem(app, selectedApp => this._activateApplication(selectedApp),
+                () => this._select(index));
+            this._items.push(item);
+            this._appGrid.layout_manager.attach(item,
+                index % this._appColumns, Math.floor(index / this._appColumns), 1, 1);
+        });
+        this._appCount = apps.length;
+        this._appGrid.visible = apps.length > 0;
+        paths.forEach(path => {
+            const index = this._items.length;
+            const item = new ResultItem(path, selectedPath => this._activate(selectedPath),
+                () => this._select(index));
+            this._items.push(item);
+            this._files.add_child(item);
+        });
+        this._scroll.visible = this._items.length > 0;
+        if (this._items.length)
+            this._select(0);
+    }
+
     _queryChanged() {
         this._cancelPending();
-        this._clearResults();
         if (!this._isOpen)
             return;
         const query = this._entry.get_text();
         const state = queryState(query);
         if (state !== 'ready') {
+            this._clearResults();
             this._setStatus(state === 'short' ? _('Type to search.') :
                 _('The query is too long or contains an invalid character.'));
             return;
         }
-        this._setStatus(_('Searching…'));
+        this._setStatus('');
         const generation = this._generation;
         this._debounceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, DEBOUNCE_MS, () => {
             this._debounceId = 0;
@@ -167,36 +190,16 @@ export class SearchOverlay {
 
     async _search(query, generation) {
         const apps = findApplications(query);
-        apps.forEach((app, index) => {
-            const item = new ApplicationItem(app, selectedApp => this._activateApplication(selectedApp),
-                () => this._select(index));
-            this._items.push(item);
-            this._appGrid.layout_manager.attach(item,
-                index % this._appColumns, Math.floor(index / this._appColumns), 1, 1);
-        });
-        this._appCount = apps.length;
-        this._appGrid.visible = apps.length > 0;
-        this._scroll.visible = apps.length > 0;
-        if (apps.length)
-            this._select(0);
         try {
             const paths = await this._engine.search(query);
             if (!this._isOpen || generation !== this._generation)
                 return;
+            this._replaceResults(apps, paths);
             this._setStatus(paths.length || apps.length ? '' : _('No matching files. The index may need updating.'));
-            paths.forEach(path => {
-                const index = this._items.length;
-                const item = new ResultItem(path, selectedPath => this._activate(selectedPath),
-                    () => this._select(index));
-                this._items.push(item);
-                this._files.add_child(item);
-            });
-            this._scroll.visible = this._items.length > 0;
-            if (this._selected < 0 && paths.length)
-                this._select(0);
         } catch (error) {
             if (!this._isOpen || generation !== this._generation || error.code === 'cancelled')
                 return;
+            this._replaceResults(apps, []);
             const messages = {
                 'missing-dependency': _('plocate is not installed.\nInstall it to use Search Everything Lightly.\nFedora: sudo dnf install plocate'),
                 'index-unavailable': _('The plocate index is unavailable or unreadable.\nSee the README for index setup and permissions.'),
