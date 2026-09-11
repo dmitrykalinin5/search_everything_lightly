@@ -72,6 +72,9 @@ export async function run(extension) {
         assert(global.stage.key_focus === overlay._entry.clutter_text, 'Entry did not receive focus');
         checks.push('overlay open and initial focus');
         overlay._entry.set_text('physics report');
+        await delay(30);
+        assert(!overlay._status.visible && overlay._status.text === '',
+            'Searching status still shifts the results area');
         await until(() => overlay._items.length === 50, `Search results missing: ${overlay._status.text}`);
         await delay(200);
         assert(overlay._selected === 0, 'First result is not selected');
@@ -202,7 +205,11 @@ export async function run(extension) {
         overlay._select(0);
         assert(overlay._scroll.vadjustment.value === 0, 'Application navigation did not scroll back to the top');
         checks.push('application tiles precede files with shared scrolling and arrow navigation');
+        const previousFirstItem = overlay._items[0];
         overlay._entry.set_text('p');
+        await delay(30);
+        assert(overlay._items[0] === previousFirstItem && overlay._scroll.visible,
+            'Existing results disappeared before the replacement was ready');
         await until(() => overlay._appCount > 0 && overlay._files.get_children().length === 50,
             'One-character input did not search apps and files');
         overlay._entry.set_text('*.pdf');
@@ -218,7 +225,7 @@ export async function run(extension) {
             await delay(100);
             checkBounds(`results for ${JSON.stringify(query)}`);
         }
-        checks.push('fixed window size and position while typing, clearing, loading and changing result counts');
+        checks.push('fixed window size and position without an intermediate searching status');
         overlay._entry.set_text('physics');
         await until(() => overlay._appCount === 2, 'Application tiles did not return');
         overlay._select(overlay._items.findIndex(item => item.app?.get_id() === 'sel-demo-0.desktop'));

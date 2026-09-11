@@ -27,9 +27,6 @@ msgstr "Не удалось запустить приложение."
 msgid "The query is too long or contains an invalid character."
 msgstr "Запрос слишком длинный или содержит недопустимый символ."
 
-msgid "Searching…"
-msgstr "Поиск…"
-
 msgid "No matching files. The index may need updating."
 msgstr "Ничего не найдено. Возможно, нужно обновить индекс."
 
