@@ -5,3 +5,6 @@
 __pycache__/
 *.pyc
 ideas.txt
+# Local code analysis artifacts
+/graphify-out/
+/.reposkillopt/
