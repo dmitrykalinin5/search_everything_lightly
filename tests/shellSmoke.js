@@ -76,6 +76,13 @@ export async function run(extension) {
         await delay(200);
         assert(overlay._selected === 0, 'First result is not selected');
         const [width, height] = overlay._dialog.contentLayout.get_transformed_size();
+        const position = overlay._dialog.contentLayout.get_transformed_position();
+        const checkBounds = state => {
+            const bounds = [...overlay._dialog.contentLayout.get_transformed_size(),
+                ...overlay._dialog.contentLayout.get_transformed_position()];
+            assert(bounds.every((value, index) => Math.abs(value - [width, height, ...position][index]) < 1),
+                `Overlay moved or resized during ${state}: ${bounds}`);
+        };
         checks.push(`UI rendered at ${width} × ${height}`);
         const first = overlay._items[0];
         const child = first.get_child();
@@ -202,6 +209,16 @@ export async function run(extension) {
         await until(() => overlay._appCount === 0 && overlay._files.get_children().length === 50,
             'File mask did not return the PDFs');
         checks.push('one-character input and filename masks work in the overlay');
+        for (const query of ['physics report 000', '', 'no-such-result-2938', 'physics', 'p', '*.pdf']) {
+            overlay._entry.set_text(query);
+            await delay(30);
+            checkBounds(`typing ${JSON.stringify(query)}`);
+            await until(() => overlay._debounceId === 0 && engine._active === null,
+                'Search did not finish during geometry check');
+            await delay(100);
+            checkBounds(`results for ${JSON.stringify(query)}`);
+        }
+        checks.push('fixed window size and position while typing, clearing, loading and changing result counts');
         overlay._entry.set_text('physics');
         await until(() => overlay._appCount === 2, 'Application tiles did not return');
         overlay._select(overlay._items.findIndex(item => item.app?.get_id() === 'sel-demo-0.desktop'));
@@ -217,6 +234,8 @@ export async function run(extension) {
             overlay._entry.set_text('physics');
             await until(() => overlay._appCount === 2 && overlay._status.text.includes('plocate'),
                 'Missing plocate prevented application search');
+            await delay(100);
+            checkBounds('application results with a dependency error');
             const app = overlay._items.find(item => item.app?.get_id() === 'sel-demo-1.desktop');
             app.emit('clicked', 1);
             await until(() => !overlay._isOpen && openedUri.query_exists(null), 'Application click did not launch');

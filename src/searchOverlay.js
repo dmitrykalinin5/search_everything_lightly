@@ -53,7 +53,7 @@ export class SearchOverlay {
         this._results.add_child(this._appGrid);
         this._results.add_child(this._files);
         this._scroll = new St.ScrollView({child: this._results,
-            style_class: 'sel-scroll', overlay_scrollbars: false, x_expand: true,
+            style_class: 'sel-scroll', overlay_scrollbars: false, x_expand: true, y_expand: true,
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC});
         content.add_child(this._scroll);
@@ -78,9 +78,10 @@ export class SearchOverlay {
         const area = Main.layoutManager.getWorkAreaForMonitor(monitor);
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
         const width = Math.min(560, area.width / scale - 64);
+        const height = Math.min(320, area.height / scale * 0.45) + 48;
         this._appColumns = Math.max(1, Math.min(4, Math.floor(width / 104)));
-        this._dialog.contentLayout.set_style(`width: ${width}px;`);
-        this._scroll.set_style(`max-height: ${Math.min(320, area.height / scale * 0.45)}px;`);
+        // Reserve the results area even while it is empty or a search is pending.
+        this._dialog.contentLayout.set_style(`width: ${width}px; height: ${height}px;`);
         this._isOpen = this._dialog.open();
         if (!this._isOpen)
             return;
