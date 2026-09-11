@@ -6,10 +6,10 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 
 import * as ParentalControlsManager from 'resource:///org/gnome/shell/misc/parentalControlsManager.js';
-import {displayText, hasWildcards} from './query.js';
+import {displayText, isPatternQuery} from './query.js';
 
 export function findApplications(query) {
-    if (hasWildcards(query))
+    if (isPatternQuery(query))
         return [];
     const appSystem = Shell.AppSystem.get_default();
     const controls = ParentalControlsManager.getDefault();

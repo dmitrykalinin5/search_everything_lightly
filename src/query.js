@@ -12,7 +12,27 @@ export function queryTerms(query) {
 export function queryState(query) {
     if (query.includes('\0') || [...query].length > MAX_QUERY_LENGTH)
         return 'invalid';
-    return [...query.trim()].length < MIN_QUERY_LENGTH ? 'short' : 'ready';
+    if ([...query.trim()].length < MIN_QUERY_LENGTH)
+        return 'short';
+    if (isRegexQuery(query) && !regexPattern(query))
+        return 'invalid-pattern';
+    return 'ready';
+}
+
+function closingBracket(term, start) {
+    let index = start + 1;
+    if (['!', '^'].includes(term[index]))
+        index++;
+    if (term[index] === ']')
+        index++;
+    for (; index < term.length; index++) {
+        if (term[index] === '\\' && index + 1 < term.length) {
+            index++;
+        } else if (term[index] === ']') {
+            return index;
+        }
+    }
+    return -1;
 }
 
 function parseTerm(term) {
@@ -20,13 +40,26 @@ function parseTerm(term) {
     let wildcard = false;
     for (let i = 0; i < term.length; i++) {
         const character = term[i];
-        if (character === '\\' && ['*', '?', '\\'].includes(term[i + 1])) {
+        if (character === '\\' && ['*', '?', '\\', '[', ']'].includes(term[i + 1])) {
             pattern += `\\${term[++i]}`;
         } else if (character === '*' || character === '?') {
             wildcard = true;
             pattern += character;
+        } else if (character === '[') {
+            const closing = closingBracket(term, i);
+            if (closing >= 0) {
+                wildcard = true;
+                pattern += term.slice(i, closing + 1);
+                i = closing;
+            } else {
+                pattern += '\\[';
+            }
+        } else if (character === ']') {
+            pattern += '\\]';
+        } else if (character === '\\') {
+            pattern += '\\\\';
         } else {
-            pattern += character.replace(/[\\\[\]]/g, '\\$&');
+            pattern += character;
         }
     }
     return {pattern, wildcard};
@@ -36,11 +69,27 @@ export function hasWildcards(query) {
     return queryTerms(query).some(term => parseTerm(term).wildcard);
 }
 
+export function isRegexQuery(query) {
+    return query.trim().startsWith('re:');
+}
+
+function regexPattern(query) {
+    return query.trim().slice(3).trim();
+}
+
+export function isPatternQuery(query) {
+    return isRegexQuery(query) || hasWildcards(query);
+}
+
 export function buildArguments(command, query, database = null) {
     const args = [command, '--ignore-case', '--existing', '--null',
         '--limit', String(CANDIDATE_LIMIT)];
     if (database !== null)
         args.push('--database', database);
+    if (isRegexQuery(query)) {
+        args.push('--basename', '--regex', '--', regexPattern(query));
+        return args;
+    }
     const terms = queryTerms(query).map(parseTerm);
     // A mask matches the whole basename, so ?.js cannot match a directory
     // component or main.js. Plain terms retain the existing substring search.

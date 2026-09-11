@@ -175,7 +175,11 @@ export class SearchOverlay {
         const state = queryState(query);
         if (state !== 'ready') {
             this._clearResults();
-            this._setStatus(state === 'short' ? _('Type to search.') :
+            const messages = {
+                short: _('Type to search.'),
+                'invalid-pattern': _('The regular expression is empty or invalid.'),
+            };
+            this._setStatus(messages[state] ??
                 _('The query is too long or contains an invalid character.'));
             return;
         }
@@ -204,6 +208,7 @@ export class SearchOverlay {
                 'missing-dependency': _('plocate is not installed.\nInstall it to use Search Everything Lightly.\nFedora: sudo dnf install plocate'),
                 'index-unavailable': _('The plocate index is unavailable or unreadable.\nSee the README for index setup and permissions.'),
                 'timeout': _('Search timed out. Try a more specific query.'),
+                'invalid-pattern': _('The regular expression is empty or invalid.'),
             };
             this._setStatus(messages[error.code] ?? _('Search failed. Please try again.'));
         }

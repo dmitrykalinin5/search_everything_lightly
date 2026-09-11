@@ -40,7 +40,7 @@ await test('real plocate: NUL-delimited paths retain embedded newlines', async (
     assert((await engine.search('break'))[0].endsWith('/line\nbreak.txt'), 'Lost newline');
 });
 await test('real plocate: escaped glob characters, quotes, backslashes and shell syntax are literal', async () => {
-    for (const query of ['literal[a]\\*\\?', 'back\\slash', '-leading', "quote'\"", '$(touch SEL_INJECTION)'])
+    for (const query of ['literal\\[a\\]\\*\\?', 'back\\slash', '-leading', "quote'\"", '$(touch SEL_INJECTION)'])
         assert((await engine.search(query)).length === 1, query);
 });
 await test('real plocate: deleted entries excluded, empty query and no matches', async () => {
@@ -61,6 +61,24 @@ await test('real plocate: star, question mark, prefix masks and escaping', async
     assert(JSON.stringify(await names('one*.js')) === JSON.stringify(['one.js', 'one-more.JS', 'one*.js'].sort()),
         'Prefix mask matched unrelated names');
     assert(JSON.stringify(await names('one\\*.js')) === JSON.stringify(['one*.js']), 'Escaped star not literal');
+});
+await test('real plocate: glob lists, ranges and negated lists', async () => {
+    const names = async query => (await engine.search(query)).map(path => GLib.path_get_basename(path)).sort();
+    assert(JSON.stringify(await names('project_[123].docx')) ===
+        JSON.stringify(['project_1.docx', 'project_2.docx']), 'Glob list failed');
+    assert(JSON.stringify(await names('photo_[0-9].jpg')) ===
+        JSON.stringify(['photo_1.jpg', 'photo_5.jpg']), 'Glob range failed');
+    assert(JSON.stringify(await names('file[!0-9].txt')) === JSON.stringify(['fileA.txt']),
+        'Negated glob list failed');
+    assert(JSON.stringify(await names('file[^0-9].txt')) === JSON.stringify(['fileA.txt']),
+        'Caret-negated glob list failed');
+});
+await test('real plocate: POSIX extended regular expressions and invalid syntax', async () => {
+    const names = (await engine.search('re:^report-[0-9]{4}-(0[1-9]|1[0-2])\\.pdf$'))
+        .map(path => GLib.path_get_basename(path)).sort();
+    assert(JSON.stringify(names) === JSON.stringify(['report-2024-01.pdf', 'report-2025-12.PDF']),
+        'Extended regular expression failed');
+    await expectCode(engine.search('re:['), 'invalid-pattern');
 });
 await test('real plocate: 120 candidates limited to 50 results', async () => {
     assert((await engine.search('many-results')).length === 50, 'Incorrect result limit');

@@ -15,6 +15,10 @@ with tempfile.TemporaryDirectory(prefix='sel-tests-') as folder:
              "quote'\" $(touch SEL_INJECTION).txt", 'removed-report.txt']
     names += ['a.js', 'я.js', '😀.js', 'ab.js', 'one.js', 'one-more.JS',
               'someone.js', '.js', 'one.js.backup', 'one*.js']
+    names += ['project_1.docx', 'project_2.docx', 'project_4.docx',
+              'photo_1.jpg', 'photo_5.jpg', 'photo_12.jpg',
+              'fileA.txt', 'file5.txt', 'report-2024-01.pdf',
+              'report-2025-12.PDF', 'report-2025-13.pdf', 'report-final.pdf']
     for name in names:
         (files / name).touch()
     for index in range(120):

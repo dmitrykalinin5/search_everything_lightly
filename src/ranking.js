@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import {hasWildcards, queryTerms} from './query.js';
+import {isPatternQuery, queryTerms} from './query.js';
 
 function normalize(text) {
     return text.normalize('NFC').toLowerCase();
@@ -33,7 +33,7 @@ function locationRank(path, home) {
 export function rankResults(paths, query, home, limit) {
     const normalized = normalize(query.trim());
     const terms = queryTerms(normalized);
-    const wildcard = hasWildcards(query);
+    const wildcard = isPatternQuery(query);
     return [...new Set(paths)].map(path => {
         const name = normalize(path.slice(path.lastIndexOf('/') + 1));
         return {path, name, match: matchRank(name, normalized, terms, wildcard),

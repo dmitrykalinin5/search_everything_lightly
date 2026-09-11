@@ -67,6 +67,9 @@ def main():
         (work / part).mkdir(mode=0o700)
     for index in range(120):
         (work / 'files' / f'Physics report {index:03}.pdf').write_text('%PDF-1.7\n')
+    for name in ['project_1.docx', 'project_2.docx', 'project_4.docx',
+                 'report-2024.log', 'report-2025.LOG', 'report-final.txt']:
+        (work / 'files' / name).touch()
     (work / 'files' / 'Physics reports').mkdir()
     applications = work / 'data/applications'
     applications.mkdir()
