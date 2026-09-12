@@ -34,13 +34,15 @@ export default class SearchPreferences extends ExtensionPreferences {
             return false;
         });
 
-        const dependencies = new Adw.PreferencesGroup({title: _('Search index'),
-            description: _('Search uses the existing plocate index. New files appear after the next index update.')});
-        dependencies.add(new Adw.ActionRow({title: 'plocate',
-            subtitle: GLib.find_program_in_path('plocate') ? _('Installed') :
+        const dependencies = new Adw.PreferencesGroup({title: _('Search sources'),
+            description: _('GNOME LocalSearch updates ordinary home files automatically. Optional plocate adds hidden and system files.')});
+        dependencies.add(new Adw.ActionRow({title: 'GNOME LocalSearch',
+            subtitle: _('Primary source. Updates automatically without sudo updatedb.')}));
+        dependencies.add(new Adw.ActionRow({title: _('Optional plocate'),
+            subtitle: GLib.find_program_in_path('plocate') ? _('Installed for hidden and system files') :
                 _('Not installed. Fedora: sudo dnf install plocate')}));
-        dependencies.add(new Adw.ActionRow({title: _('Index updates'),
-            subtitle: _('Use your system’s plocate-updatedb.timer, or run sudo updatedb explicitly. The extension never runs it automatically.')}));
+        dependencies.add(new Adw.ActionRow({title: _('Refreshing hidden and system files'),
+            subtitle: _('If plocate results are missing or stale, run sudo updatedb in a terminal. Ordinary LocalSearch results do not require it.')}));
         page.add(dependencies);
     }
 

@@ -54,11 +54,13 @@ export async function run(extension) {
         await until(() => !Main.layoutManager._startingUp, 'Shell startup timed out');
         Main.overview.hide();
         Main.welcomeDialog?.close();
-        new Gio.Settings({schema_id: 'org.gnome.desktop.interface'}).set_boolean('enable-animations', false);
+        const interfaceSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
+        interfaceSettings.set_boolean('enable-animations', true);
         await delay(300);
         const engine = extension._engine;
         const overlay = extension._overlay;
         assert(overlay, 'Extension did not construct the overlay');
+        engine._localSearch = null;
         engine._database = `${root}/test.db`;
         extension._settings.set_strv('toggle-search', ['<Control><Super>space']);
         keyboard = Clutter.get_default_backend().get_default_seat()
@@ -68,11 +70,25 @@ export async function run(extension) {
         hotkey(keyboard);
         await until(() => overlay._isOpen, 'Global shortcut did not open the overlay');
         assert(overlay._isOpen && Main.modalCount === 1, 'Modal did not open');
-        await delay(150);
         assert(global.stage.key_focus === overlay._entry.clutter_text, 'Entry did not receive focus');
-        checks.push('overlay open and initial focus');
+        const dialogActor = overlay._dialog.dialogLayout._dialog;
+        assert(dialogActor.opacity < 255 || dialogActor.scale_x < 1 || dialogActor.scale_y < 1,
+            'Spotlight-style opening animation did not start');
+        await until(() => dialogActor.opacity === 255 && dialogActor.scale_x === 1 &&
+            dialogActor.scale_y === 1, 'Opening animation did not finish');
+        const [compactWidth, compactHeight] = overlay._dialog.contentLayout.get_transformed_size();
+        assert(compactWidth >= 500 && compactWidth <= 620 && compactHeight < 100,
+            `Initial overlay is not a compact search row: ${compactWidth}x${compactHeight}`);
+        assert(!overlay._expanded && !overlay._scroll.visible && !overlay._status.visible,
+            'Compact overlay contains result or status content');
+        checks.push(`compact animated overlay opened at ${compactWidth} × ${compactHeight} with initial focus`);
+        await screenshot(`${root}/overlay-compact.png`);
+        interfaceSettings.set_boolean('enable-animations', false);
         overlay._entry.set_text('physics report');
         await delay(30);
+        const [, typingHeight] = overlay._dialog.contentLayout.get_transformed_size();
+        assert(overlay._expanded && typingHeight > compactHeight + 200,
+            `First input did not expand the overlay: ${typingHeight}`);
         assert(!overlay._status.visible && overlay._status.text === '',
             'Searching status still shifts the results area');
         await until(() => overlay._items.length === 50, `Search results missing: ${overlay._status.text}`);
@@ -176,6 +192,10 @@ export async function run(extension) {
         for (let i = 0; i < 10; i++) {
             overlay.toggle();
             assert(overlay._entry.get_text() === '', 'New open did not clear the query');
+            await delay(20);
+            const [, reopenedHeight] = overlay._dialog.contentLayout.get_transformed_size();
+            assert(!overlay._expanded && Math.abs(reopenedHeight - compactHeight) < 1,
+                `New open did not restore compact height: ${reopenedHeight}`);
             overlay._entry.set_text('physics');
             overlay.close();
         }
@@ -228,13 +248,14 @@ export async function run(extension) {
         for (const query of ['physics report 000', '', 'no-such-result-2938', 'physics', 'p', '*.pdf']) {
             overlay._entry.set_text(query);
             await delay(30);
+            assert(overlay._expanded, `Overlay collapsed while typing ${JSON.stringify(query)}`);
             checkBounds(`typing ${JSON.stringify(query)}`);
             await until(() => overlay._debounceId === 0 && engine._active === null,
                 'Search did not finish during geometry check');
             await delay(100);
             checkBounds(`results for ${JSON.stringify(query)}`);
         }
-        checks.push('fixed window size and position without an intermediate searching status');
+        checks.push('expanded window stays fixed until close without an intermediate searching status');
         overlay._entry.set_text('physics');
         await until(() => overlay._appCount === 2, 'Application tiles did not return');
         overlay._select(overlay._items.findIndex(item => item.app?.get_id() === 'sel-demo-0.desktop'));
@@ -278,8 +299,9 @@ export async function run(extension) {
             actor.meta_window.get_title()?.includes('Search Everything Lightly')), 'Preferences did not open');
         await until(() => global.get_window_actors().some(actor =>
             actor.meta_window.get_title()?.includes('Search Everything Lightly') &&
-            actor.scale_x === 1 && actor.scale_y === 1 && actor.opacity === 255), 'Preferences still animating');
-        await delay(500);
+            actor.visible && actor.scale_x === 1 && actor.scale_y === 1 &&
+            actor.opacity === 255), 'Preferences still animating');
+        await delay(100);
         await screenshot(`${root}/preferences.png`);
         for (const actor of global.get_window_actors()) {
             if (actor.meta_window.get_title()?.includes('Search Everything Lightly'))

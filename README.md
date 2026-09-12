@@ -1,223 +1,187 @@
 # Search Everything Lightly
 
-Локальный поиск приложений, файлов и папок в компактном окне GNOME Shell. Версия **0.2.2**, Fedora / GNOME Shell **49**, Wayland. Английский интерфейс и русский перевод через gettext.
+[English](README.md) · [Русский](README.ru.md)
 
-Нажмите **Super+Space**, начните вводить запрос, выберите результат стрелками и нажмите Enter. Поиск начинается с одного символа.
+A fast, compact Spotlight-style search overlay for GNOME Shell 49. Press **Super+Space**, type one character or more, choose an application, file or folder, and press Enter.
 
-![Окно поиска в GNOME Shell 49](screenshots/overlay.png)
+![Search overlay on GNOME Shell 49](screenshots/overlay.png)
 
-Реальный снимок из изолированного тестового сеанса GNOME 49.9 с демонстрационными приложениями и файлами. [Окно настроек](screenshots/preferences.png). Скриншоты доступны в исходниках и не включаются в установочный архив.
+## Highlights
 
-## Возможности
+- Applications appear first as square tiles using GNOME's application index and visibility rules.
+- Ordinary file searches use **GNOME LocalSearch** as the primary source. It monitors normal files in the home directory and updates its index automatically.
+- Optional **plocate** results add hidden files, system paths and other indexed locations.
+- LocalSearch and plocate results are merged, deduplicated and ranked together.
+- One-character queries, multiple words, standard glob masks and POSIX extended regular expressions are supported.
+- The overlay opens as a compact search row, then expands once after the first input and keeps a stable size until closed.
+- A 180 ms fade-and-scale opening animation follows the system animation preference.
+- The desktop is not dimmed. The result list has a visible scrollbar and keeps the previous results visible while the next query is running.
+- Everything stays local. There are no network requests, telemetry or stored query history.
 
-- Приложения показываются первыми, квадратными плитками с системными иконками. До 8 совпадений из индекса приложений GNOME; скрытые приложения и ограничения родительского контроля учитываются.
-- Поиск файлов по существующему индексу `plocate`, без учёта регистра. Приложения доступны и при отсутствии plocate или его базы.
-- Несколько слов означают «найти все слова»: `physics lab` находит `physics_lab.pdf`.
-- Имя, сокращённый путь с `~`, системные MIME-иконки, общая прокрутка плиток и файлов с видимым ползунком.
-- Ранжирование: точное имя → имя без расширения → начало имени → все слова в имени → совпадение в пути. Внутри каждой группы приоритет у HOME, затем других домашних каталогов, подключённых дисков и системных путей.
-- Поиск через 100 мс после ввода, максимум 300 кандидатов и 50 результатов; тайм-аут 3 секунды. Сортировка работает внутри полученных кандидатов, а не по всему индексу.
-- Старый процесс отменяется при изменении запроса, закрытии окна и отключении расширения.
-- Полупрозрачное почти чёрное окно шириной около 600 px на мониторе активного приложения, без затемнения рабочего стола и нижней подсказки клавиш. Масштабирование средствами St, выделение системным акцентным цветом.
-- Размер окна фиксируется при открытии с учётом монитора: ввод, стирание запроса и изменение количества результатов не меняют его размер и положение. Промежуточная надпись во время поиска не показывается.
-- При продолжении ввода уже показанные результаты остаются на месте до полной готовности нового списка, который заменяет их за одно обновление.
-- Изменение горячей клавиши в настройках расширения.
+## Search sources and automatic updates
 
-Содержимое документов, фильтры `ext:`/`type:` и fuzzy matching пока не поддерживаются. Максимум — 256 символов. Ограничения Unicode case folding определяются `plocate`; ранжирование дополнительно нормализует Unicode.
+Search Everything Lightly uses two complementary file sources:
 
-### Маски имён файлов
+| Source | Purpose | Updates |
+|---|---|---|
+| GNOME LocalSearch | Primary source for ordinary files and folders in the home directory | Automatic, usually within seconds |
+| plocate | Optional source for hidden files, system files and additional indexed locations | Updated by the system timer or `sudo updatedb` |
 
-| Запрос | Совпадения |
-|---|---|
-| `*.js` | Любое имя, заканчивающееся на `.js`, без учёта регистра |
-| `?.js` | Один символ перед `.js`: `a.js`, `я.js`; не `main.js` |
-| `one*.js` | `one.js`, `one-more.js`; не `someone.js` |
-| `project_[123].docx` | `project_1.docx`, `project_2.docx`, `project_3.docx` |
-| `photo_[0-9].jpg` | Имя с одной цифрой от 0 до 9 в указанном месте |
-| `file[!0-9].txt` | Один любой символ, кроме цифры |
-| `one *.js` | Все слова и маска должны совпасть с именем файла |
-| `one\*.js` | Буквальный текст `one*.js` |
-
-Наличие неэкранированного `*`, `?` или корректной группы `[…]` переключает поиск на **полное имя файла или папки**, без родительского пути; приложения для маски не показываются. Диапазоны задаются через `-`, отрицание — через `!` или `^` сразу после открывающей скобки. Без масок по-прежнему ищутся все слова внутри полного пути. Для буквальных спецсимволов используйте `\*`, `\?`, `\[` и `\]`. Незакрытая `[` считается обычным символом. Shell для обработки запроса не запускается.
-
-### Регулярные выражения
-
-Префикс `re:` включает POSIX Extended Regular Expressions для полного имени файла или папки:
-
-| Запрос | Совпадения |
-|---|---|
-| `re:^report-[0-9]+\.pdf$` | `report-1.pdf`, `report-2026.pdf` |
-| `re:\.(js|ts)$` | Имена, заканчивающиеся на `.js` или `.ts` |
-| `re:^file[^0-9]\.txt$` | `fileA.txt`, но не `file5.txt` |
-
-Выражение после `re:` передаётся `plocate --regex` одним аргументом, без запуска shell. Поиск не учитывает регистр. По умолчанию регулярное выражение находит подстроку; `^` и `$` ограничивают начало и конец имени. Это синтаксис POSIX ERE, поэтому для цифр используйте `[0-9]`, а не PCRE-запись `\d`. Пустое или ошибочное выражение показывает понятное сообщение. Приложения в режиме регулярного выражения не показываются.
-
-Регулярные выражения заставляют `plocate` линейно просматривать индекс и могут быть заметно медленнее обычного поиска. Для них сохраняются общий лимит кандидатов и тайм-аут 3 секунды.
-
-## Установка на Fedora
-
-Зависимости для сборки из исходников:
+The extension works for ordinary files without plocate and does not require the user to run `sudo updatedb`. If optional hidden or system results are missing or stale, refresh the plocate database:
 
 ```bash
-sudo dnf install plocate gettext make python3 glib2
+sudo updatedb
+```
+
+On Fedora, check whether the regular system update is enabled:
+
+```bash
+systemctl status plocate-updatedb.timer
+sudo systemctl enable --now plocate-updatedb.timer
+```
+
+The extension never requests administrator privileges and never runs `sudo` or `updatedb` itself.
+
+LocalSearch deliberately skips some hidden files, Git repositories and configured exclusions. plocate coverage also follows `/etc/updatedb.conf` and the current user's path permissions. Consequently, excluded files may remain unavailable even after an index refresh.
+
+## Query syntax
+
+Ordinary terms are case-insensitive. Multiple words must all occur in the filename or path:
+
+```text
+physics report
+```
+
+### Filename glob masks
+
+| Query | Meaning |
+|---|---|
+| `*.js` | Any basename ending in `.js` |
+| `?.js` | Exactly one character before `.js` |
+| `one*.js` | Basenames beginning with `one` and ending in `.js` |
+| `project_[123].docx` | One listed character |
+| `photo_[0-9].jpg` | One character in the specified range |
+| `file[!0-9].txt` | One character outside the specified range |
+| `one\*.js` | The literal text `one*.js` |
+
+An unescaped `*`, `?` or valid `[…]` expression switches to whole-basename matching. Use `!` or `^` immediately after `[` for negation. Escape literal special characters as `\*`, `\?`, `\[` and `\]`.
+
+Glob masks are handled by plocate. If plocate is not installed, ordinary LocalSearch queries continue to work, while masks show an actionable message.
+
+### Regular expressions
+
+Prefix a query with `re:` to use a case-insensitive POSIX extended regular expression against the complete basename:
+
+| Query | Matches |
+|---|---|
+| `re:^report-[0-9]+\.pdf$` | `report-1.pdf`, `report-2026.pdf` |
+| `re:\.(js|ts)$` | Names ending in `.js` or `.ts` |
+| `re:^file[^0-9]\.txt$` | `fileA.txt`, but not `file5.txt` |
+
+Use `[0-9]` instead of the PCRE-only shorthand `\d`. Invalid expressions produce an error in the overlay. Regular-expression searches require plocate and may be slower because plocate scans its index linearly; the extension keeps the 300-candidate limit and three-second timeout.
+
+## Installation on Fedora
+
+Dependencies for a source installation:
+
+```bash
+sudo dnf install localsearch tinysparql gettext make python3 glib2
+```
+
+Install plocate for hidden files, system files, glob masks and regular expressions:
+
+```bash
+sudo dnf install plocate
+```
+
+Build and install the extension:
+
+```bash
 make install
 ```
 
-`make install` копирует расширение в `~/.local/share/gnome-shell/extensions/search_everything_lightly@dmitrykalinin5.github.com/` (учитывает `XDG_DATA_HOME`). После первой установки **выйдите из сеанса GNOME и войдите снова**, затем:
+Log out and back in after the first installation on Wayland, then enable it:
 
 ```bash
 make enable
 make prefs
 ```
 
-В Wayland нельзя перезапустить Shell через Alt+F2 → `r`. После изменения JS уже загруженного расширения также нужен новый сеанс.
-
-Установка готового архива:
+A prebuilt archive can be installed with:
 
 ```bash
 gnome-extensions install --force dist/search_everything_lightly@dmitrykalinin5.github.com.shell-extension.zip
-# После выхода и повторного входа:
 gnome-extensions enable search_everything_lightly@dmitrykalinin5.github.com
 ```
 
-### Переход со старого UUID
-
-GNOME считает расширение с новым UUID отдельным расширением. Если установлена предыдущая сборка, сначала отключите её:
+GNOME treats the previous `search-everything-lightly@ogultra` UUID as a different extension. Disable it before installing the current UUID:
 
 ```bash
 gnome-extensions disable search-everything-lightly@ogultra
 ```
 
-Затем выполните установку выше и включите новый UUID после повторного входа в сеанс. Схема GSettings сохранена, поэтому выбранная горячая клавиша останется прежней.
+## Keyboard controls
 
-### Горячая клавиша и раскладка
-
-По умолчанию используется **Super+Space** из ТЗ. GNOME часто использует это же сочетание для переключения раскладки. Откройте `make prefs` и назначьте, например, **Ctrl+Super+Space**. Расширение не меняет системные сочетания клавиш. Чтобы записать сочетание, нажмите кнопку с текущими клавишами, затем новое сочетание; Escape отменяет запись, кнопка сброса возвращает Super+Space.
-
-## Подготовка индекса
-
-Расширение не устанавливает пакеты, не запускает `sudo` и не выполняет `updatedb`. При отсутствии `plocate` или проблеме с индексом в окне отображается сообщение.
-
-При необходимости создайте индекс **самостоятельно**:
-
-```bash
-sudo updatedb
-```
-
-Проверьте штатный таймер Fedora:
-
-```bash
-systemctl status plocate-updatedb.timer
-# Если он отключён и вы хотите ежедневное обновление:
-sudo systemctl enable --now plocate-updatedb.timer
-```
-
-Проверка поиска вне расширения:
-
-```bash
-plocate --ignore-case --existing --limit 10 -- Documents
-```
-
-Если команда сообщает `Permission denied`, проверьте установку пакета `plocate` и права на индекс. Не делайте системную базу общедоступной: штатный `plocate` проверяет видимость путей для текущего пользователя. В ограниченной среде разработки setgid-доступ к системному индексу может быть недоступен, даже если поиск в обычном терминале работает.
-
-Новые файлы появятся только после обновления индекса. Удалённые отсекаются через `--existing`. Скрытые и системные файлы участвуют в поиске, если доступны пользователю и включены в индекс. Диски и каталоги, исключённые настройками `/etc/updatedb.conf`, не найдутся: на Fedora `/run`, `/media` и некоторые файловые системы обычно исключены. Расширение не обходит правила индексации.
-
-## Управление
-
-| Клавиша | Действие |
+| Key | Action |
 |---|---|
-| Super+Space / выбранное сочетание | Открыть или закрыть поиск |
-| Escape | Закрыть |
-| ↑ / ↓ | Перейти между рядами плиток и строками файлов |
-| ← / → | Выбрать приложение в ряду плиток |
-| Enter | Запустить приложение или открыть файл/папку |
-| Ctrl+Enter | Открыть родительскую папку |
-| Shift+Enter | Выделить в файловом менеджере через FileManager1; при недоступности открыть родительскую папку |
-| Ctrl+L | Вернуть фокус в поле ввода |
-| Ctrl+A | Выделить запрос |
-| Щелчок по результату | Открыть |
+| Super+Space or the configured shortcut | Open or close the overlay |
+| Escape | Close |
+| ↑ / ↓ | Move between application rows and file results |
+| ← / → | Move between application tiles |
+| Enter | Launch the application or open the selected path |
+| Ctrl+Enter | Open the parent folder |
+| Shift+Enter | Reveal the item in Files, falling back to the parent folder |
+| Ctrl+L | Return focus to the search entry |
+| Ctrl+A | Select the full query |
 
-После успешного открытия окно закрывается. При ошибке остаётся открытым с пояснением. Новый вызов очищает запрос.
+Super+Space may already switch keyboard layouts. Run `make prefs` and assign another shortcut such as **Ctrl+Super+Space** when necessary.
 
-## Настройки
+## Settings
 
-```bash
-make prefs
-```
+The preferences window contains the shortcut editor and a search-source status section. It explains that LocalSearch updates ordinary files automatically and that `sudo updatedb` is only useful when optional plocate results are missing or stale.
 
-В 0.2 доступна смена сочетания клавиш и информация о зависимости/индексе. GSettings-схема: `org.gnome.shell.extensions.search-everything-lightly`, ключ `toggle-search`, тип `as`. Минимальная длина (1), задержка (100 мс), лимиты файлов (300/50) заданы в `src/query.js`.
+The GSettings schema is `org.gnome.shell.extensions.search-everything-lightly`; the shortcut key is `toggle-search` with type `as`.
 
-## Разработка и проверка
+## Development and verification
 
-Для автоматических тестов дополнительно нужны `nodejs`, `gjs` и `plocate` с `updatedb`:
+Additional development dependencies:
 
 ```bash
 sudo dnf install nodejs gjs
+```
+
+Run the automated checks:
+
+```bash
 make lint
 make test
 make pack
-```
-
-`make lint` проверяет синтаксис JS, локальные импорты, метаданные, GSettings-схему и каталог переводов. Это проверка без npm-зависимостей, а не полноценный ESLint.
-
-`make test` проверяет запросы и ранжирование в Node.js, затем запускает GJS и настоящий `plocate` на отдельной временной базе. Проверяются Unicode, спецсимволы, переводы строк в именах, удалённые файлы, лимиты, ошибки индекса, тайм-аут, отмена и быстрые последовательные запросы. Системный индекс не изменяется.
-
-Дополнительная проверка в отдельном headless GNOME Shell:
-
-```bash
-make build
 python3 tests/run_shell_smoke.py
 python3 tests/check_archive.py
 ```
 
-Она использует отдельный D-Bus, виртуальный монитор 1280×900, временные настройки и базу. Настоящая виртуальная клавиатура проверяет глобальную горячую клавишу; Enter, Ctrl+Enter и Shift+Enter проверяются с временным обработчиком файлов и тестовым FileManager1. Проверяются фокус, прокрутка, размеры строк, повторное включение и открытие GTK-настроек. Скриншоты и журнал сохраняются в указанном скриптом каталоге `/tmp/sel-shell-*`; текущий рабочий сеанс не изменяется. Эта проверка требует окружения, разрешающего D-Bus и запуск headless Mutter.
+The test suite uses a private plocate database and does not modify the system index. The headless Shell smoke test runs in a separate D-Bus session with a virtual 1280×900 monitor. It checks the global shortcut, compact and expanded geometry, animations, focus, scrolling, application and file activation, masks, regular expressions, cancellation and extension cleanup.
 
-Проверки логики покрывают подготовку масок, регулярных выражений и ранжирование; 17 интеграционных проверок GJS — поиск и отмену процессов. Headless Shell дополнительно проверяет плитки, запуск приложений, шаблоны и прокрутку. Реальные несколько мониторов, дробное масштабирование, блокировка экрана и другие дистрибутивы остаются в ручном списке перед публикацией.
+Manual checks for real monitors, scaling and themes are listed in [tests/MANUAL.md](tests/MANUAL.md).
 
-Архив: `dist/search_everything_lightly@dmitrykalinin5.github.com.shell-extension.zip`. Он содержит только необходимые исходники, метаданные, стили, схему, русский каталог gettext, README и лицензию. Тесты и служебные файлы разработки в архив не попадают.
+## Project structure
 
-Команды управления:
-
-```bash
-make disable
-make uninstall
-```
-
-Логи GNOME Shell:
-
-```bash
-journalctl --user -f -o cat /usr/bin/gnome-shell
-```
-
-Расширение не пишет запросы и найденные пути в журнал. Инструкция ручной проверки — [tests/MANUAL.md](tests/MANUAL.md).
-
-## Структура
-
-| Файл | Назначение |
+| Path | Responsibility |
 |---|---|
-| `extension.js` | Включение, отключение, глобальная клавиша |
-| `src/searchOverlay.js` | Модальное окно, debounce, фокус, клавиатура, защита от старых ответов |
-| `src/searchEngine.js` | Асинхронный subprocess, отмена, тайм-аут, ошибки индекса |
-| `src/query.js`, `src/ranking.js` | Подготовка обычных запросов/масок и ранжирование |
-| `src/applicationItem.js` | Поиск видимых приложений GNOME и квадратные плитки |
-| `src/resultItem.js` | Строка результата и асинхронная MIME-иконка |
-| `src/fileActions.js` | Gio-открытие и FileManager1 |
-| `prefs.js` | Отдельный GTK4/libadwaita-процесс настроек |
+| `extension.js` | Extension lifecycle and global shortcut |
+| `src/searchOverlay.js` | Spotlight-style UI, debounce, focus and keyboard navigation |
+| `src/searchEngine.js` | Hybrid backend orchestration, cancellation, merge and fallback |
+| `src/localSearchEngine.js` | Asynchronous GNOME LocalSearch queries over D-Bus |
+| `src/query.js`, `src/ranking.js` | Query preparation and result ranking |
+| `src/applicationItem.js` | GNOME application search and tiles |
+| `src/resultItem.js` | File result rows and asynchronous icons |
+| `src/fileActions.js` | Opening paths and FileManager1 integration |
+| `prefs.js` | GTK4/libadwaita preferences process |
 
-API сверены с установленным GNOME Shell 49.9 и [документацией GJS](https://gjs.guide/extensions/upgrading/gnome-shell-49.html). Очистка ресурсов следует [правилам ревью GNOME Extensions](https://gjs.guide/extensions/review-guidelines/review-guidelines.html). Другие версии GNOME пока не заявлены.
+## Privacy
 
-## Дальнейшие версии
+All search and ranking happens locally. The extension does not send queries or file paths over the network and does not write them to the journal. It launches a file or application only after explicit user activation.
 
-- Следующее обновление: лимит результатов, скрытые файлы, исключённые каталоги.
-- 0.3: фильтры и fuzzy ranking.
-- 0.4: Search Provider и отключаемая локальная история.
-- Перед 1.0: проверки на реальных мониторах/масштабах, скриншоты, чистая установка и ревью для extensions.gnome.org.
+## License
 
-UUID выбран как `search_everything_lightly@dmitrykalinin5.github.com`. Перед первой публикацией добавьте URL публичного репозитория в metadata.json. После публикации UUID лучше сохранять. Автоматическая публикация не выполняется.
-
-## Приватность
-
-Всё работает локально. Нет сетевых запросов, внешних API, телеметрии и истории запросов. Расширение использует существующую базу `plocate` и запускает стандартное приложение только по выбору пользователя.
-
-## Лицензия
-
-GPL-3.0-or-later. Полный текст — [LICENSE](LICENSE).
+GPL-3.0-or-later. See [LICENSE](LICENSE).
