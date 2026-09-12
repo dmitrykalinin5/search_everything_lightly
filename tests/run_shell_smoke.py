@@ -17,6 +17,7 @@ def session(work):
     log_path = work / 'shell.log'
     with log_path.open('w') as log:
         shell = subprocess.Popen(['gnome-shell', '--headless', '--virtual-monitor', '1280x900',
+                                  '--virtual-monitor', '1280x900',
                                   '--no-x11', '--wayland-display', 'sel-test'],
                                  stdout=log, stderr=subprocess.STDOUT)
         try:

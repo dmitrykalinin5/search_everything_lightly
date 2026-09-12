@@ -2,7 +2,7 @@
 
 [English](README.md) · [Русский](README.ru.md)
 
-A fast, compact Spotlight-style search overlay for GNOME Shell 49. Press **Super+Space**, type one character or more, choose an application, file or folder, and press Enter.
+A fast, compact Spotlight-style search overlay for GNOME Shell 49. Press **Super+Enter**, type one character or more, choose an application, file or folder, and press Enter.
 
 ![Search overlay on GNOME Shell 49](screenshots/overlay.png)
 
@@ -14,6 +14,7 @@ A fast, compact Spotlight-style search overlay for GNOME Shell 49. Press **Super
 - LocalSearch and plocate results are merged, deduplicated and ranked together.
 - One-character queries, multiple words, standard glob masks and POSIX extended regular expressions are supported.
 - The overlay opens as a compact search row, then expands once after the first input and keeps a stable size until closed.
+- On multi-monitor desktops, the overlay opens on the focused window's monitor, or on the pointer's monitor when no window is focused.
 - A 180 ms fade-and-scale opening animation follows the system animation preference.
 - The desktop is not dimmed. The result list has a visible scrollbar and keeps the previous results visible while the next query is running.
 - Everything stays local. There are no network requests, telemetry or stored query history.
@@ -124,7 +125,7 @@ gnome-extensions disable search-everything-lightly@ogultra
 
 | Key | Action |
 |---|---|
-| Super+Space or the configured shortcut | Open or close the overlay |
+| Super+Enter or the configured shortcut | Open or close the overlay |
 | Escape | Close |
 | ↑ / ↓ | Move between application rows and file results |
 | ← / → | Move between application tiles |
@@ -134,7 +135,7 @@ gnome-extensions disable search-everything-lightly@ogultra
 | Ctrl+L | Return focus to the search entry |
 | Ctrl+A | Select the full query |
 
-Super+Space may already switch keyboard layouts. Run `make prefs` and assign another shortcut such as **Ctrl+Super+Space** when necessary.
+The default shortcut is **Super+Enter**. Run `make prefs` to assign another shortcut when necessary.
 
 ## Settings
 
@@ -160,7 +161,7 @@ python3 tests/run_shell_smoke.py
 python3 tests/check_archive.py
 ```
 
-The test suite uses a private plocate database and does not modify the system index. The headless Shell smoke test runs in a separate D-Bus session with a virtual 1280×900 monitor. It checks the global shortcut, compact and expanded geometry, animations, focus, scrolling, application and file activation, masks, regular expressions, cancellation and extension cleanup.
+The test suite uses a private plocate database and does not modify the system index. The headless Shell smoke test runs in a separate D-Bus session with two virtual 1280×900 monitors. It checks the global shortcut, monitor targeting, compact and expanded geometry, animations, focus, scrolling, application and file activation, masks, regular expressions, cancellation and extension cleanup.
 
 Manual checks for real monitors, scaling and themes are listed in [tests/MANUAL.md](tests/MANUAL.md).
 

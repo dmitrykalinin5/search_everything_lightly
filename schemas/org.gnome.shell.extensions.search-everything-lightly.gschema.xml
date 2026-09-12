@@ -3,7 +3,7 @@
   <schema id="org.gnome.shell.extensions.search-everything-lightly"
           path="/org/gnome/shell/extensions/search-everything-lightly/">
     <key name="toggle-search" type="as">
-      <default>['&lt;Super&gt;space']</default>
+      <default>['&lt;Super&gt;Return']</default>
       <summary>Open or close file search</summary>
       <description>Global keyboard shortcut for Search Everything Lightly.</description>
     </key>
