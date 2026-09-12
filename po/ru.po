@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Search Everything Lightly 0.2.2\n"
+"Project-Id-Version: Search Everything Lightly 0.4.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-09 23:00+0300\n"
 "PO-Revision-Date: 2026-09-12 00:00+0300\n"
@@ -15,11 +15,11 @@ msgstr ""
 msgid "Search apps and files..."
 msgstr "Поиск приложений и файлов…"
 
-msgid "plocate is not installed.\nInstall it to use Search Everything Lightly.\nFedora: sudo dnf install plocate"
-msgstr "plocate не установлен.\nУстановите его для работы Search Everything Lightly.\nFedora: sudo dnf install plocate"
+msgid "GNOME LocalSearch is unavailable and plocate is not installed."
+msgstr "GNOME LocalSearch недоступен, а plocate не установлен."
 
-msgid "Type to search."
-msgstr "Начните вводить запрос."
+msgid "Masks and regular expressions require plocate.\nFedora: sudo dnf install plocate"
+msgstr "Для масок и регулярных выражений требуется plocate.\nFedora: sudo dnf install plocate"
 
 msgid "Could not launch this application."
 msgstr "Не удалось запустить приложение."
@@ -33,8 +33,8 @@ msgstr "Регулярное выражение пустое или содерж
 msgid "No matching files. The index may need updating."
 msgstr "Ничего не найдено. Возможно, нужно обновить индекс."
 
-msgid "The plocate index is unavailable or unreadable.\nSee the README for index setup and permissions."
-msgstr "Индекс plocate отсутствует или недоступен для чтения.\nИнструкции по настройке индекса и прав доступа — в README."
+msgid "The available file search indexes are unavailable or unreadable.\nSee the README for setup and permissions."
+msgstr "Доступные поисковые индексы отсутствуют или недоступны для чтения.\nИнструкции по настройке и правам доступа — в README."
 
 msgid "Search timed out. Try a more specific query."
 msgstr "Время поиска истекло. Попробуйте уточнить запрос."
@@ -66,23 +66,29 @@ msgstr "Изменить сочетание"
 msgid "Reset shortcut"
 msgstr "Сбросить сочетание"
 
-msgid "Search index"
-msgstr "Поисковый индекс"
+msgid "Search sources"
+msgstr "Источники поиска"
 
-msgid "Search uses the existing plocate index. New files appear after the next index update."
-msgstr "Поиск использует существующий индекс plocate. Новые файлы появляются после очередного обновления индекса."
+msgid "GNOME LocalSearch updates ordinary home files automatically. Optional plocate adds hidden and system files."
+msgstr "GNOME LocalSearch автоматически обновляет обычные файлы домашнего каталога. Необязательный plocate добавляет скрытые и системные файлы."
 
-msgid "Installed"
-msgstr "Установлен"
+msgid "Primary source. Updates automatically without sudo updatedb."
+msgstr "Основной источник. Обновляется автоматически без sudo updatedb."
+
+msgid "Optional plocate"
+msgstr "Необязательный plocate"
+
+msgid "Installed for hidden and system files"
+msgstr "Установлен для скрытых и системных файлов"
 
 msgid "Not installed. Fedora: sudo dnf install plocate"
 msgstr "Не установлен. Fedora: sudo dnf install plocate"
 
-msgid "Index updates"
-msgstr "Обновление индекса"
+msgid "Refreshing hidden and system files"
+msgstr "Обновление скрытых и системных файлов"
 
-msgid "Use your system’s plocate-updatedb.timer, or run sudo updatedb explicitly. The extension never runs it automatically."
-msgstr "Используйте системный plocate-updatedb.timer или вручную выполните sudo updatedb. Расширение не запускает обновление автоматически."
+msgid "If plocate results are missing or stale, run sudo updatedb in a terminal. Ordinary LocalSearch results do not require it."
+msgstr "Если результаты plocate отсутствуют или устарели, выполните sudo updatedb в терминале. Обычным результатам LocalSearch это не требуется."
 
 msgid "Press a shortcut with Ctrl, Alt or Super.\nEscape cancels."
 msgstr "Нажмите сочетание с Ctrl, Alt или Super.\nEscape — отмена."

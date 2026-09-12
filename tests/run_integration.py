@@ -31,6 +31,7 @@ with tempfile.TemporaryDirectory(prefix='sel-tests-') as folder:
                     '--prunepaths', '', '--prunefs', '', '--prunenames', '',
                     '--prune-bind-mounts', 'no', '--require-visibility', 'no'], check=True)
     (files / 'removed-report.txt').unlink()
+    (files / 'fresh-local-only.txt').touch()
     (work / 'corrupt.db').write_text('not a plocate database')
     fake = work / 'slow-plocate'
     fake.write_text('#!/usr/bin/python3\nimport sys, time\n'

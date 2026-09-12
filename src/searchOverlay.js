@@ -15,6 +15,9 @@ import {ResultItem} from './resultItem.js';
 import {ApplicationItem, findApplications} from './applicationItem.js';
 import {openPath} from './fileActions.js';
 
+const COMPACT_HEIGHT = 42;
+const OPEN_ANIMATION_MS = 180;
+
 export class SearchOverlay {
     constructor(engine) {
         this._engine = engine;
@@ -25,6 +28,9 @@ export class SearchOverlay {
         this._appColumns = 4;
         this._selected = -1;
         this._isOpen = false;
+        this._expanded = false;
+        this._contentWidth = 0;
+        this._expandedHeight = 0;
         this._action = null;
         this._dialog = new ModalDialog.ModalDialog({styleClass: 'sel-dialog',
             shellReactive: true, destroyOnClose: false, shouldFadeIn: false, shouldFadeOut: false});
@@ -79,14 +85,17 @@ export class SearchOverlay {
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
         const width = Math.min(560, area.width / scale - 64);
         const height = Math.min(320, area.height / scale * 0.45) + 48;
+        this._contentWidth = width;
+        this._expandedHeight = height;
+        this._expanded = false;
         this._appColumns = Math.max(1, Math.min(4, Math.floor(width / 104)));
-        // Reserve the results area even while it is empty or a search is pending.
-        this._dialog.contentLayout.set_style(`width: ${width}px; height: ${height}px;`);
+        this._setContentHeight(COMPACT_HEIGHT);
         this._isOpen = this._dialog.open();
         if (!this._isOpen)
             return;
         // ModalDialog defaults to the pointer's monitor; prefer the focused window.
         this._dialog._monitorConstraint.index = monitor;
+        this._animateOpen();
         this._queryChanged();
         this._entry.grab_key_focus();
     }
@@ -96,6 +105,34 @@ export class SearchOverlay {
         this._cancelPending();
         this._clearResults();
         this._dialog.close();
+    }
+
+    _setContentHeight(height) {
+        this._dialog.contentLayout.set_style(
+            `width: ${this._contentWidth}px; height: ${height}px;`);
+    }
+
+    _expand() {
+        if (this._expanded)
+            return;
+        this._expanded = true;
+        this._setContentHeight(this._expandedHeight);
+    }
+
+    _animateOpen() {
+        const actor = this._dialog.dialogLayout._dialog;
+        actor.remove_all_transitions();
+        actor.set_pivot_point(0.5, 0.5);
+        actor.opacity = 0;
+        actor.scale_x = 0.94;
+        actor.scale_y = 0.94;
+        actor.ease({
+            opacity: 255,
+            scale_x: 1,
+            scale_y: 1,
+            duration: OPEN_ANIMATION_MS,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
     }
 
     destroy() {
@@ -172,11 +209,13 @@ export class SearchOverlay {
         if (!this._isOpen)
             return;
         const query = this._entry.get_text();
+        if (query.length > 0)
+            this._expand();
         const state = queryState(query);
         if (state !== 'ready') {
             this._clearResults();
             const messages = {
-                short: _('Type to search.'),
+                short: '',
                 'invalid-pattern': _('The regular expression is empty or invalid.'),
             };
             this._setStatus(messages[state] ??
@@ -205,8 +244,9 @@ export class SearchOverlay {
                 return;
             this._replaceResults(apps, []);
             const messages = {
-                'missing-dependency': _('plocate is not installed.\nInstall it to use Search Everything Lightly.\nFedora: sudo dnf install plocate'),
-                'index-unavailable': _('The plocate index is unavailable or unreadable.\nSee the README for index setup and permissions.'),
+                'missing-dependency': _('GNOME LocalSearch is unavailable and plocate is not installed.'),
+                'pattern-backend-unavailable': _('Masks and regular expressions require plocate.\nFedora: sudo dnf install plocate'),
+                'index-unavailable': _('The available file search indexes are unavailable or unreadable.\nSee the README for setup and permissions.'),
                 'timeout': _('Search timed out. Try a more specific query.'),
                 'invalid-pattern': _('The regular expression is empty or invalid.'),
             };

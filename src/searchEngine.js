@@ -2,7 +2,8 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-import {buildArguments, isRegexQuery, queryState, RESULT_LIMIT} from './query.js';
+import {LocalSearchEngine} from './localSearchEngine.js';
+import {buildArguments, isPatternQuery, isRegexQuery, queryState, RESULT_LIMIT} from './query.js';
 import {rankResults} from './ranking.js';
 
 export class SearchError extends Error {
@@ -13,15 +14,21 @@ export class SearchError extends Error {
 }
 
 export class SearchEngine {
-    constructor({command = 'plocate', database = null, timeoutMs = 3000} = {}) {
+    constructor({command = 'plocate', database = null, timeoutMs = 3000,
+        localSearch = undefined} = {}) {
         this._command = command;
         this._database = database;
         this._timeoutMs = timeoutMs;
+        this._localSearch = localSearch === undefined ?
+            new LocalSearchEngine({timeoutMs}) : localSearch;
         this._active = null;
+        this._generation = 0;
         this.available = GLib.find_program_in_path(command) !== null;
     }
 
     cancel() {
+        this._generation++;
+        this._localSearch?.cancel();
         const request = this._active;
         this._active = null;
         if (!request)
@@ -32,6 +39,12 @@ export class SearchEngine {
         request.cancellable.cancel();
     }
 
+    destroy() {
+        this.cancel();
+        this._localSearch?.destroy();
+        this._localSearch = null;
+    }
+
     _clearTimer(request) {
         if (request.timer) {
             GLib.Source.remove(request.timer);
@@ -39,19 +52,7 @@ export class SearchEngine {
         }
     }
 
-    async search(query) {
-        this.cancel();
-        const state = queryState(query);
-        if (state === 'short')
-            return [];
-        if (state !== 'ready')
-            throw new SearchError(state === 'invalid-pattern' ? 'invalid-pattern' : 'invalid-query');
-
-        // Recheck so installing plocate does not require a Shell restart.
-        this.available = GLib.find_program_in_path(this._command) !== null;
-        if (!this.available)
-            throw new SearchError('missing-dependency');
-
+    async _searchPlocate(query) {
         let process;
         try {
             process = Gio.Subprocess.new(
@@ -89,13 +90,10 @@ export class SearchEngine {
             const errorOutput = decoder.decode(stderr.get_data()).trim();
             if (isRegexQuery(query) && errorOutput.startsWith('Error when compiling regex'))
                 throw new SearchError('invalid-pattern');
-            // plocate uses exit 1 for BOTH no matches and database errors.
-            // stderr distinguishes them; do not log paths or queries.
             if (!process.get_if_exited() || process.get_exit_status() > 1 || errorOutput)
                 throw new SearchError('index-unavailable');
-            const paths = decoder.decode(stdout.get_data()).split('\0')
+            return decoder.decode(stdout.get_data()).split('\0')
                 .filter(path => path.startsWith('/'));
-            return rankResults(paths, query, GLib.get_home_dir(), RESULT_LIMIT);
         } catch (error) {
             if (request.timedOut)
                 throw new SearchError('timeout');
@@ -109,5 +107,41 @@ export class SearchEngine {
             if (this._active === request)
                 this._active = null;
         }
+    }
+
+    async search(query) {
+        this.cancel();
+        const generation = this._generation;
+        const state = queryState(query);
+        if (state === 'short')
+            return [];
+        if (state !== 'ready')
+            throw new SearchError(state === 'invalid-pattern' ? 'invalid-pattern' : 'invalid-query');
+
+        const pattern = isPatternQuery(query);
+        this.available = GLib.find_program_in_path(this._command) !== null;
+        const searches = [];
+        if (!pattern && this._localSearch)
+            searches.push(this._localSearch.search(query));
+        if (this.available)
+            searches.push(this._searchPlocate(query));
+        if (!searches.length)
+            throw new SearchError(pattern ? 'pattern-backend-unavailable' : 'missing-dependency');
+
+        const outcomes = await Promise.allSettled(searches);
+        if (generation !== this._generation)
+            throw new SearchError('cancelled');
+        const paths = outcomes.filter(outcome => outcome.status === 'fulfilled')
+            .flatMap(outcome => outcome.value);
+        if (outcomes.some(outcome => outcome.status === 'fulfilled'))
+            return rankResults(paths, query, GLib.get_home_dir(), RESULT_LIMIT);
+
+        const errors = outcomes.map(outcome => outcome.reason);
+        for (const code of ['invalid-pattern', 'timeout', 'index-unavailable',
+            'launch-failed', 'search-failed']) {
+            if (errors.some(error => error?.code === code))
+                throw new SearchError(code);
+        }
+        throw new SearchError('missing-dependency');
     }
 }

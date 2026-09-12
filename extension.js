@@ -23,7 +23,7 @@ export default class SearchEverythingLightly extends Extension {
         Main.wm.removeKeybinding('toggle-search');
         this._overlay?.destroy();
         this._overlay = null;
-        this._engine?.cancel();
+        this._engine?.destroy();
         this._engine = null;
         this._settings = null;
     }
