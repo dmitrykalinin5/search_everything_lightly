@@ -79,8 +79,7 @@ export class SearchOverlay {
             return;
         this._entry.set_text('');
         this._clearResults();
-        const monitor = global.display.get_focus_window()?.get_monitor() ??
-            global.display.get_current_monitor();
+        const monitor = this._targetMonitor();
         const area = Main.layoutManager.getWorkAreaForMonitor(monitor);
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
         const width = Math.min(560, area.width / scale - 64);
@@ -93,11 +92,23 @@ export class SearchOverlay {
         this._isOpen = this._dialog.open();
         if (!this._isOpen)
             return;
-        // ModalDialog defaults to the pointer's monitor; prefer the focused window.
+        // ModalDialog.open() resets this to the pointer monitor. Override it
+        // synchronously before the compositor renders the next frame.
         this._dialog._monitorConstraint.index = monitor;
         this._animateOpen();
         this._queryChanged();
         this._entry.grab_key_focus();
+    }
+
+    _targetMonitor() {
+        const count = Main.layoutManager.monitors.length;
+        const candidates = [
+            global.display.get_focus_window()?.get_monitor(),
+            global.display.get_current_monitor(),
+            Main.layoutManager.primaryIndex,
+            0,
+        ];
+        return candidates.find(index => Number.isInteger(index) && index >= 0 && index < count);
     }
 
     close() {

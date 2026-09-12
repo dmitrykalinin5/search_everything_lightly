@@ -11,7 +11,7 @@ export default class SearchPreferences extends ExtensionPreferences {
         const settings = this.getSettings();
         const page = new Adw.PreferencesPage({title: _('Search'), icon_name: 'edit-find-symbolic'});
         const group = new Adw.PreferencesGroup({title: _('Keyboard shortcut'),
-            description: _('Super+Space may already switch keyboard layouts in GNOME. Choose another shortcut here if needed.')});
+            description: _('The default shortcut is Super+Enter. Choose another shortcut here if needed.')});
         page.add(group);
         window.add(page);
         const row = new Adw.ActionRow({title: _('Open or close search')});

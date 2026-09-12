@@ -54,8 +54,8 @@ msgstr "Поиск"
 msgid "Keyboard shortcut"
 msgstr "Горячая клавиша"
 
-msgid "Super+Space may already switch keyboard layouts in GNOME. Choose another shortcut here if needed."
-msgstr "Super+Space может быть занято переключением раскладки GNOME. При необходимости выберите другое сочетание здесь."
+msgid "The default shortcut is Super+Enter. Choose another shortcut here if needed."
+msgstr "Сочетание по умолчанию — Super+Enter. При необходимости выберите другое сочетание здесь."
 
 msgid "Open or close search"
 msgstr "Открыть или закрыть поиск"

@@ -31,17 +31,23 @@ function key(overlay, symbol, modifiers = 0) {
         get_key_symbol: () => symbol, get_state: () => modifiers});
 }
 
-function hotkey(keyboard) {
-    const keys = [Clutter.KEY_Control_L, Clutter.KEY_Super_L, Clutter.KEY_space];
+function hotkey(keyboard, control = false) {
+    const keys = control ? [Clutter.KEY_Control_L, Clutter.KEY_Super_L, Clutter.KEY_Return] :
+        [Clutter.KEY_Super_L, Clutter.KEY_Return];
     for (const symbol of keys)
         keyboard.notify_keyval(GLib.get_monotonic_time(), symbol, Clutter.KeyState.PRESSED);
     for (const symbol of keys.reverse())
         keyboard.notify_keyval(GLib.get_monotonic_time(), symbol, Clutter.KeyState.RELEASED);
 }
 
-async function screenshot(path) {
+async function screenshot(path, monitor = null) {
     const stream = Gio.File.new_for_path(path).replace(null, false, Gio.FileCreateFlags.NONE, null);
-    await new Shell.Screenshot().screenshot(false, stream);
+    if (monitor) {
+        await new Shell.Screenshot().screenshot_area(
+            monitor.x, monitor.y, monitor.width, monitor.height, stream);
+    } else {
+        await new Shell.Screenshot().screenshot(false, stream);
+    }
     stream.close(null);
 }
 
@@ -62,14 +68,31 @@ export async function run(extension) {
         assert(overlay, 'Extension did not construct the overlay');
         engine._localSearch = null;
         engine._database = `${root}/test.db`;
-        extension._settings.set_strv('toggle-search', ['<Control><Super>space']);
-        keyboard = Clutter.get_default_backend().get_default_seat()
-            .create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
-        checks.push('extension enable and GSettings shortcut change');
+        assert(extension._settings.get_strv('toggle-search')[0] === '<Super>Return',
+            'Default shortcut is not Super+Enter');
+        const seat = Clutter.get_default_backend().get_default_seat();
+        keyboard = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+        assert(Main.layoutManager.monitors.length === 2, 'Headless Shell did not create two monitors');
+        const targetMonitor = Main.layoutManager.monitors[1];
+        assert(Main.extensionManager.openExtensionPrefs(extension.uuid, '', {}), 'Prefs not advertised');
+        await until(() => global.get_window_actors().some(actor =>
+            actor.meta_window.get_title()?.includes('Search Everything Lightly') && actor.visible),
+        'Preferences did not open for the monitor test');
+        const prefsActor = global.get_window_actors().find(actor =>
+            actor.meta_window.get_title()?.includes('Search Everything Lightly'));
+        prefsActor.meta_window.move_to_monitor(targetMonitor.index);
+        prefsActor.meta_window.activate(global.get_current_time());
+        await until(() => global.display.get_focus_window() === prefsActor.meta_window &&
+            prefsActor.meta_window.get_monitor() === targetMonitor.index,
+        'Preferences did not move to the second monitor');
         await delay(100);
         hotkey(keyboard);
         await until(() => overlay._isOpen, 'Global shortcut did not open the overlay');
         assert(overlay._isOpen && Main.modalCount === 1, 'Modal did not open');
+        assert(overlay._dialog._monitorConstraint.index === targetMonitor.index,
+            'Overlay did not target the pointer monitor');
+        extension._settings.set_strv('toggle-search', ['<Control><Super>Return']);
+        checks.push('Super+Enter default, GSettings shortcut change and second-monitor targeting');
         assert(global.stage.key_focus === overlay._entry.clutter_text, 'Entry did not receive focus');
         const dialogActor = overlay._dialog.dialogLayout._dialog;
         assert(dialogActor.opacity < 255 || dialogActor.scale_x < 1 || dialogActor.scale_y < 1,
@@ -77,12 +100,18 @@ export async function run(extension) {
         await until(() => dialogActor.opacity === 255 && dialogActor.scale_x === 1 &&
             dialogActor.scale_y === 1, 'Opening animation did not finish');
         const [compactWidth, compactHeight] = overlay._dialog.contentLayout.get_transformed_size();
+        const [compactX, compactY] = overlay._dialog.contentLayout.get_transformed_position();
         assert(compactWidth >= 500 && compactWidth <= 620 && compactHeight < 100,
             `Initial overlay is not a compact search row: ${compactWidth}x${compactHeight}`);
+        assert(compactX >= targetMonitor.x && compactY >= targetMonitor.y &&
+            compactX + compactWidth <= targetMonitor.x + targetMonitor.width &&
+            compactY + compactHeight <= targetMonitor.y + targetMonitor.height,
+        `Overlay geometry is outside the second monitor: ${compactX},${compactY},` +
+            `${compactWidth},${compactHeight}`);
         assert(!overlay._expanded && !overlay._scroll.visible && !overlay._status.visible,
             'Compact overlay contains result or status content');
         checks.push(`compact animated overlay opened at ${compactWidth} × ${compactHeight} with initial focus`);
-        await screenshot(`${root}/overlay-compact.png`);
+        await screenshot(`${root}/overlay-compact.png`, targetMonitor);
         interfaceSettings.set_boolean('enable-animations', false);
         overlay._entry.set_text('physics report');
         await delay(30);
@@ -108,7 +137,7 @@ export async function run(extension) {
         const labels = child.get_child_at_index(1);
         assert(child.x < 30 && labels.height >= 30 && first.height >= 44,
             `Result layout is cramped: child x=${child.x}, text height=${labels.height}, row height=${first.height}`);
-        await screenshot(`${root}/overlay.png`);
+        await screenshot(`${root}/overlay.png`, targetMonitor);
         assert(width >= 500 && width <= 620 && height < 480, `Overlay is not compact: ${width}x${height}`);
         assert(!overlay._dialog._lightbox, 'Search still dims the desktop');
         assert(overlay._scroll.vscrollbar_visible && !overlay._scroll.overlay_scrollbars,
@@ -201,9 +230,9 @@ export async function run(extension) {
         }
         assert(overlay._debounceId === 0 && engine._active === null, 'Close leaked a search');
         checks.push('10 rapid open/search/close cycles');
-        hotkey(keyboard);
+        hotkey(keyboard, true);
         await until(() => overlay._isOpen, 'Global shortcut stopped working');
-        hotkey(keyboard);
+        hotkey(keyboard, true);
         await until(() => !overlay._isOpen, 'Global shortcut did not toggle closed');
         checks.push('global shortcut toggles the modal closed');
         overlay.toggle();
@@ -213,7 +242,7 @@ export async function run(extension) {
         assert(overlay._items[0].app && overlay._items[overlay._appCount].path,
             'Applications are not above files');
         await delay(200);
-        await screenshot(`${root}/overlay-apps.png`);
+        await screenshot(`${root}/overlay-apps.png`, targetMonitor);
         key(overlay, Clutter.KEY_Right);
         assert(overlay._selected === 1, 'Right did not move between application tiles');
         key(overlay, Clutter.KEY_Down);
@@ -302,7 +331,9 @@ export async function run(extension) {
             actor.visible && actor.scale_x === 1 && actor.scale_y === 1 &&
             actor.opacity === 255), 'Preferences still animating');
         await delay(100);
-        await screenshot(`${root}/preferences.png`);
+        const prefsMonitor = Main.layoutManager.monitors[
+            global.display.get_focus_window()?.get_monitor() ?? targetMonitor.index];
+        await screenshot(`${root}/preferences.png`, prefsMonitor);
         for (const actor of global.get_window_actors()) {
             if (actor.meta_window.get_title()?.includes('Search Everything Lightly'))
                 actor.meta_window.delete(global.get_current_time());
