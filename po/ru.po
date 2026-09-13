@@ -12,8 +12,8 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-msgid "Search apps and files..."
-msgstr "Поиск приложений и файлов…"
+msgid "Open Files"
+msgstr "Открыть «Файлы»"
 
 msgid "GNOME LocalSearch is unavailable and plocate is not installed."
 msgstr "GNOME LocalSearch недоступен, а plocate не установлен."
@@ -65,6 +65,15 @@ msgstr "Изменить сочетание"
 
 msgid "Reset shortcut"
 msgstr "Сбросить сочетание"
+
+msgid "Interface"
+msgstr "Интерфейс"
+
+msgid "Show Files button"
+msgstr "Показывать кнопку «Файлы»"
+
+msgid "Adds a folder icon to the search field that opens your home folder."
+msgstr "Добавляет в поле поиска значок папки, открывающий домашний каталог."
 
 msgid "Search sources"
 msgstr "Источники поиска"

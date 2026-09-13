@@ -11,9 +11,9 @@ import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 metadata = json.loads((ROOT / 'metadata.json').read_text())
 assert metadata['uuid'] == 'search_everything_lightly@dmitrykalinin5.github.com'
-assert metadata['shell-version'] == ['49']
-assert metadata['version'] == 4
-assert metadata['version-name'] == json.loads((ROOT / 'package.json').read_text())['version'] == '0.4.0'
+assert metadata['shell-version'] == ['49', '50']
+assert metadata['version'] == 5
+assert metadata['version-name'] == json.loads((ROOT / 'package.json').read_text())['version'] == '0.5.0'
 readme = (ROOT / 'README.md').read_text()
 readme_ru = (ROOT / 'README.ru.md').read_text()
 assert '[Русский](README.ru.md)' in readme

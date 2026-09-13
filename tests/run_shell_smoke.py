@@ -18,7 +18,7 @@ def session(work):
     with log_path.open('w') as log:
         shell = subprocess.Popen(['gnome-shell', '--headless', '--virtual-monitor', '1280x900',
                                   '--virtual-monitor', '1280x900',
-                                  '--no-x11', '--wayland-display', 'sel-test'],
+                                  '--no-x11', '--force-animations', '--wayland-display', 'sel-test'],
                                  stdout=log, stderr=subprocess.STDOUT)
         try:
             deadline = time.monotonic() + 25
@@ -63,6 +63,9 @@ def main():
     if len(sys.argv) == 3 and sys.argv[1] == '--session':
         session(Path(sys.argv[2]))
         return
+    shell_version = subprocess.check_output(['gnome-shell', '--version'], text=True).strip()
+    print(f'Testing {shell_version}', flush=True)
+    subprocess.run([sys.executable, str(ROOT / 'scripts/build.py')], check=True)
     work = Path(tempfile.mkdtemp(prefix='sel-shell-'))
     for part in ['data', 'config', 'cache', 'state', 'runtime', 'files']:
         (work / part).mkdir(mode=0o700)
@@ -117,8 +120,11 @@ def main():
     with (work / 'session.log').open('w') as session_log:
         completed = subprocess.run(['dbus-run-session', '--', sys.executable, str(Path(__file__).resolve()),
                                     '--session', str(work)], env=env, stderr=session_log)
-    shutil.copy2(work / 'shell.log', ROOT / 'build' / 'shell-smoke.log')
+    if (work / 'shell.log').exists():
+        shutil.copy2(work / 'shell.log', ROOT / 'build' / 'shell-smoke.log')
     (ROOT / 'build' / 'shell-smoke-path').write_text(str(work))
+    if completed.returncode:
+        print((work / 'session.log').read_text(), file=sys.stderr)
     sys.exit(completed.returncode)
 
 

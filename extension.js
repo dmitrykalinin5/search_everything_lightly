@@ -12,7 +12,7 @@ export default class SearchEverythingLightly extends Extension {
     enable() {
         this._settings = this.getSettings();
         this._engine = new SearchEngine();
-        this._overlay = new SearchOverlay(this._engine);
+        this._overlay = new SearchOverlay(this._engine, this._settings);
         Main.wm.addKeybinding('toggle-search', this._settings,
             Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL | Shell.ActionMode.SYSTEM_MODAL,

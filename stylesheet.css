@@ -1,14 +1,25 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 .sel-dialog {
     border-radius: 16px;
-    padding: 12px;
-    background-color: rgba(15, 16, 18, 0.82);
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background-color: transparent;
     color: #f5f5f5;
 }
 
 .sel-dialog .sel-content {
-    padding: 12px;
+    padding: 0;
+    border-radius: 16px;
+    background-color: transparent;
+    color: #f5f5f5;
     spacing: 10px;
+}
+
+.sel-dialog .sel-content.sel-expanded {
+    padding: 0;
+    background-color: rgba(8, 10, 14, 0.78);
+    box-shadow: none;
 }
 
 .sel-dialog .sel-entry {
@@ -16,14 +27,24 @@
     min-height: 22px;
     padding: 8px 10px;
     border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: none;
+    background-color: rgba(12, 14, 18, 0.94);
     color: #f5f5f5;
     selection-background-color: -st-accent-color;
     selected-color: -st-accent-fg-color;
 }
 
+.sel-dialog .sel-content.sel-expanded .sel-entry {
+    background-color: rgba(12, 14, 18, 0.72);
+}
+
 .sel-results {
     spacing: 10px;
+}
+
+.sel-scroll {
+    margin: 0 12px 12px 12px;
 }
 
 .sel-files {
@@ -87,6 +108,7 @@
 }
 
 .sel-status {
+    margin: 0 12px 12px 12px;
     padding: 8px;
 }
 
