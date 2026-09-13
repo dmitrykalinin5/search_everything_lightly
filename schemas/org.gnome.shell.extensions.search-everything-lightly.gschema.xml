@@ -7,5 +7,10 @@
       <summary>Open or close file search</summary>
       <description>Global keyboard shortcut for Search Everything Lightly.</description>
     </key>
+    <key name="show-file-manager-button" type="b">
+      <default>true</default>
+      <summary>Show the Files button</summary>
+      <description>Show a button in the search field that opens the home folder.</description>
+    </key>
   </schema>
 </schemalist>

@@ -16,7 +16,7 @@ class ResultItem extends St.Button {
         this.path = path;
         this._cancellable = new Gio.Cancellable();
         const box = new St.BoxLayout({style_class: 'sel-result-content',
-            x_expand: true, y_expand: true});
+            x_expand: true});
         this._icon = new St.Icon({icon_name: 'text-x-generic-symbolic', icon_size: 24,
             y_align: Clutter.ActorAlign.CENTER});
         box.add_child(this._icon);

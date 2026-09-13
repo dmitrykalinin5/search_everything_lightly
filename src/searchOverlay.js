@@ -6,7 +6,7 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
-import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
+import {adjustAnimationTime, ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 
@@ -17,10 +17,17 @@ import {openPath} from './fileActions.js';
 
 const COMPACT_HEIGHT = 42;
 const OPEN_ANIMATION_MS = 180;
+const COMPACT_ENTRY_STYLE =
+    'background-color: rgba(12, 14, 18, 0.94); ' +
+    'border: 1px solid rgba(255, 255, 255, 0.22); box-shadow: none;';
+const EXPANDED_ENTRY_STYLE =
+    'background-color: rgba(12, 14, 18, 0.72); ' +
+    'border: 1px solid rgba(255, 255, 255, 0.22); box-shadow: none;';
 
 export class SearchOverlay {
-    constructor(engine) {
+    constructor(engine, settings) {
         this._engine = engine;
+        this._settings = settings;
         this._generation = 0;
         this._debounceId = 0;
         this._items = [];
@@ -28,6 +35,7 @@ export class SearchOverlay {
         this._appColumns = 4;
         this._selected = -1;
         this._isOpen = false;
+        this._isClosing = false;
         this._expanded = false;
         this._contentWidth = 0;
         this._expandedHeight = 0;
@@ -38,13 +46,17 @@ export class SearchOverlay {
         this._dialog.buttonLayout.hide();
         const content = this._dialog.contentLayout;
         content.add_style_class_name('sel-content');
-        this._entry = new St.Entry({hint_text: _('Search apps and files...'),
+        content.clip_to_allocation = true;
+        this._entry = new St.Entry({hint_text: 'Search everything',
             style_class: 'search-entry sel-entry', can_focus: true, x_expand: true});
         this._entry.set_primary_icon(new St.Icon({icon_name: 'edit-find-symbolic',
             style_class: 'search-entry-icon'}));
+        this._fileManagerIcon = new St.Icon({icon_name: 'folder-symbolic',
+            style_class: 'search-entry-icon', accessible_name: _('Open Files')});
+        this._updateFileManagerIcon();
         this._entry.clutter_text.set_max_length(MAX_QUERY_LENGTH);
         this._entry.clutter_text.set_single_line_mode(true);
-        this._entry.accessible_name = _('Search apps and files...');
+        this._entry.accessible_name = 'Search everything';
         content.add_child(this._entry);
         this._status = new St.Label({style_class: 'sel-status'});
         this._status.clutter_text.line_wrap = true;
@@ -65,11 +77,17 @@ export class SearchOverlay {
         content.add_child(this._scroll);
         this._dialog.setInitialKeyFocus(this._entry.clutter_text);
         this._entry.clutter_text.connect('text-changed', () => this._queryChanged());
+        this._entry.connect('secondary-icon-clicked', () =>
+            this._activate(GLib.get_home_dir()));
+        this._fileManagerSettingId = this._settings.connect(
+            'changed::show-file-manager-button', () => this._updateFileManagerIcon());
         this._dialog.connect('captured-event', (_actor, event) => this._keyPressed(event));
-        this._monitorsId = Main.layoutManager.connect('monitors-changed', () => this.close());
+        this._monitorsId = Main.layoutManager.connect('monitors-changed', () => this.close(false));
     }
 
     toggle() {
+        if (this._isClosing)
+            return;
         if (this._isOpen) {
             this.close();
             return;
@@ -82,7 +100,7 @@ export class SearchOverlay {
         const monitor = this._targetMonitor();
         const area = Main.layoutManager.getWorkAreaForMonitor(monitor);
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-        const width = Math.min(560, area.width / scale - 64);
+        const width = Math.min(584, area.width / scale - 64);
         const height = Math.min(320, area.height / scale * 0.45) + 48;
         this._contentWidth = width;
         this._expandedHeight = height;
@@ -95,6 +113,8 @@ export class SearchOverlay {
         // ModalDialog.open() resets this to the pointer monitor. Override it
         // synchronously before the compositor renders the next frame.
         this._dialog._monitorConstraint.index = monitor;
+        this._dialog.contentLayout.translation_y =
+            -(this._expandedHeight - COMPACT_HEIGHT) / 2;
         this._animateOpen();
         this._queryChanged();
         this._entry.grab_key_focus();
@@ -111,23 +131,78 @@ export class SearchOverlay {
         return candidates.find(index => Number.isInteger(index) && index >= 0 && index < count);
     }
 
-    close() {
+    close(animate = true) {
+        if (this._isClosing) {
+            if (!animate)
+                this._finishClose();
+            return;
+        }
+        if (!this._isOpen)
+            return;
         this._isOpen = false;
+        this._isClosing = true;
         this._cancelPending();
-        this._clearResults();
+        const actor = this._dialog.dialogLayout._dialog;
+        actor.remove_all_transitions();
+        const duration = animate ? adjustAnimationTime(OPEN_ANIMATION_MS) : 0;
+        if (duration === 0) {
+            this._finishClose();
+            return;
+        }
+        actor.ease({
+            opacity: 0,
+            scale_x: 0.94,
+            scale_y: 0.94,
+            duration,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            onComplete: () => this._finishClose(),
+        });
+    }
+
+    _finishClose() {
+        if (!this._isClosing)
+            return;
         this._dialog.close();
+        const actor = this._dialog.dialogLayout._dialog;
+        actor.remove_all_transitions();
+        actor.opacity = 255;
+        actor.scale_x = 1;
+        actor.scale_y = 1;
+        actor.translation_y = 0;
+        this._clearResults();
+        this._isClosing = false;
     }
 
     _setContentHeight(height) {
-        this._dialog.contentLayout.set_style(
+        const content = this._dialog.contentLayout;
+        content.remove_all_transitions();
+        content.remove_style_class_name('sel-expanded');
+        content.set_height(-1);
+        content.set_style(
             `width: ${this._contentWidth}px; height: ${height}px;`);
+        content.translation_y = -(this._expandedHeight - height) / 2;
+        this._entry.set_style(COMPACT_ENTRY_STYLE);
     }
 
     _expand() {
         if (this._expanded)
             return;
         this._expanded = true;
-        this._setContentHeight(this._expandedHeight);
+        const content = this._dialog.contentLayout;
+        const startHeight = content.height;
+        const targetHeight = this._expandedHeight;
+        content.remove_all_transitions();
+        content.set_height(startHeight);
+        content.set_style(`width: ${this._contentWidth}px;`);
+        content.add_style_class_name('sel-expanded');
+        this._entry.set_style(EXPANDED_ENTRY_STYLE);
+        const duration = adjustAnimationTime(OPEN_ANIMATION_MS);
+        content.ease({
+            height: targetHeight,
+            translation_y: 0,
+            duration,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
     }
 
     _animateOpen() {
@@ -141,14 +216,20 @@ export class SearchOverlay {
             opacity: 255,
             scale_x: 1,
             scale_y: 1,
-            duration: OPEN_ANIMATION_MS,
+            duration: adjustAnimationTime(OPEN_ANIMATION_MS),
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         });
     }
 
+    _updateFileManagerIcon() {
+        this._entry.set_secondary_icon(
+            this._settings.get_boolean('show-file-manager-button') ? this._fileManagerIcon : null);
+    }
+
     destroy() {
-        this.close();
+        this.close(false);
         Main.layoutManager.disconnect(this._monitorsId);
+        this._settings.disconnect(this._fileManagerSettingId);
         this._dialog.destroy();
         this._dialog = null;
         this._entry = null;
@@ -157,7 +238,9 @@ export class SearchOverlay {
         this._results = null;
         this._appGrid = null;
         this._files = null;
+        this._fileManagerIcon = null;
         this._engine = null;
+        this._settings = null;
     }
 
     _cancelPending() {

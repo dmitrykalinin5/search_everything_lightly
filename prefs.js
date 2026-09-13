@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 
@@ -33,6 +34,16 @@ export default class SearchPreferences extends ExtensionPreferences {
             settings.disconnect(signal);
             return false;
         });
+
+        const interfaceGroup = new Adw.PreferencesGroup({title: _('Interface')});
+        const fileManagerButton = new Adw.SwitchRow({
+            title: _('Show Files button'),
+            subtitle: _('Adds a folder icon to the search field that opens your home folder.'),
+        });
+        settings.bind('show-file-manager-button', fileManagerButton, 'active',
+            Gio.SettingsBindFlags.DEFAULT);
+        interfaceGroup.add(fileManagerButton);
+        page.add(interfaceGroup);
 
         const dependencies = new Adw.PreferencesGroup({title: _('Search sources'),
             description: _('GNOME LocalSearch updates ordinary home files automatically. Optional plocate adds hidden and system files.')});

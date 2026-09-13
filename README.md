@@ -2,7 +2,7 @@
 
 [English](README.md) · [Русский](README.ru.md)
 
-A fast, compact Spotlight-style search overlay for GNOME Shell 49. Press **Super+Enter**, type one character or more, choose an application, file or folder, and press Enter.
+A fast, compact Spotlight-style search overlay for GNOME Shell 49 and 50 on Wayland. Press **Super+Enter**, type one character or more, choose an application, file or folder, and press Enter.
 
 ![Search overlay on GNOME Shell 49](screenshots/overlay.png)
 
@@ -14,6 +14,9 @@ A fast, compact Spotlight-style search overlay for GNOME Shell 49. Press **Super
 - LocalSearch and plocate results are merged, deduplicated and ranked together.
 - One-character queries, multiple words, standard glob masks and POSIX extended regular expressions are supported.
 - The overlay opens as a compact search row, then expands once after the first input and keeps a stable size until closed.
+- The compact state shows only the shadowless `Search everything` field with a denser translucent fill. On the first character, the same field remains fixed while its container grows smoothly downward into the centered result panel. Escape or a second shortcut press fades and scales it away.
+- The expanded panel is translucent and has no drop shadow. A single result keeps the same row height as it has in a longer list, leaving the rest of the fixed panel empty.
+- An optional folder icon in the field opens the home folder; it can be hidden or restored in preferences.
 - On multi-monitor desktops, the overlay opens on the focused window's monitor, or on the pointer's monitor when no window is focused.
 - A 180 ms fade-and-scale opening animation follows the system animation preference.
 - The desktop is not dimmed. The result list has a visible scrollbar and keeps the previous results visible while the next query is running.
@@ -83,6 +86,8 @@ Use `[0-9]` instead of the PCRE-only shorthand `\d`. Invalid expressions produce
 
 ## Installation on Fedora
 
+Supported GNOME Shell versions: **49 and 50**, including their minor updates. GNOME extensions declare each supported major version explicitly in `metadata.json`; there is no `50+` wildcard. Later major versions will be added after compatibility checks. See the [GNOME 50 porting guide](https://gjs.guide/extensions/upgrading/gnome-shell-50.html).
+
 Dependencies for a source installation:
 
 ```bash
@@ -139,9 +144,9 @@ The default shortcut is **Super+Enter**. Run `make prefs` to assign another shor
 
 ## Settings
 
-The preferences window contains the shortcut editor and a search-source status section. It explains that LocalSearch updates ordinary files automatically and that `sudo updatedb` is only useful when optional plocate results are missing or stale.
+The preferences window contains the shortcut editor, a switch for the Files button and a search-source status section. It explains that LocalSearch updates ordinary files automatically and that `sudo updatedb` is only useful when optional plocate results are missing or stale.
 
-The GSettings schema is `org.gnome.shell.extensions.search-everything-lightly`; the shortcut key is `toggle-search` with type `as`.
+The GSettings schema is `org.gnome.shell.extensions.search-everything-lightly`. The shortcut key is `toggle-search` with type `as`; `show-file-manager-button` is a boolean and defaults to `true`.
 
 ## Development and verification
 
@@ -161,9 +166,13 @@ python3 tests/run_shell_smoke.py
 python3 tests/check_archive.py
 ```
 
-The test suite uses a private plocate database and does not modify the system index. The headless Shell smoke test runs in a separate D-Bus session with two virtual 1280×900 monitors. It checks the global shortcut, monitor targeting, compact and expanded geometry, animations, focus, scrolling, application and file activation, masks, regular expressions, cancellation and extension cleanup.
+The test suite uses a private plocate database and does not modify the system index. The headless Shell smoke test rebuilds the extension and runs in a separate D-Bus session with two virtual 1280×900 monitors. Its report includes the actual Shell version. It checks the global shortcut, monitor targeting, compact and expanded geometry, animations, focus, scrolling, application and file activation, masks, regular expressions, cancellation and extension cleanup.
+
+Before adding a later major version, check its [porting guide](https://gjs.guide/extensions/), update `shell-version` in `metadata.json` and the corresponding check in `scripts/check.py`, and run the tests above on both the new version and previously supported versions. GNOME 51 and later are not yet declared compatible.
 
 Manual checks for real monitors, scaling and themes are listed in [tests/MANUAL.md](tests/MANUAL.md).
+
+Compatibility verified on GNOME Shell **49.9** (Fedora 43) and **50.4** (Fedora 44 container): 17 headless UI scenarios and 19 GJS integration tests passed on each. The container uses software rendering; physical monitors, fractional scaling and session locking still need manual testing.
 
 ## Project structure
 
