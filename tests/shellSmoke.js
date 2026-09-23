@@ -42,6 +42,11 @@ function hotkey(keyboard, control = false) {
         keyboard.notify_keyval(GLib.get_monotonic_time(), symbol, Clutter.KeyState.RELEASED);
 }
 
+function typeKey(keyboard, symbol) {
+    keyboard.notify_keyval(GLib.get_monotonic_time(), symbol, Clutter.KeyState.PRESSED);
+    keyboard.notify_keyval(GLib.get_monotonic_time(), symbol, Clutter.KeyState.RELEASED);
+}
+
 async function screenshot(path, monitor = null) {
     const stream = Gio.File.new_for_path(path).replace(null, false, Gio.FileCreateFlags.NONE, null);
     if (monitor) {
@@ -58,6 +63,7 @@ export async function run(extension) {
     const checks = [];
     let error = null;
     let keyboard = null;
+    let backgroundProbe = null;
     try {
         await until(() => !Main.layoutManager._startingUp, 'Shell startup timed out');
         Main.overview.hide();
@@ -76,6 +82,7 @@ export async function run(extension) {
         keyboard = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
         assert(Main.layoutManager.monitors.length === 2, 'Headless Shell did not create two monitors');
         const targetMonitor = Main.layoutManager.monitors[1];
+        backgroundProbe = new St.Widget({reactive: true});
         assert(Main.extensionManager.openExtensionPrefs(extension.uuid, '', {}), 'Prefs not advertised');
         await until(() => global.get_window_actors().some(actor =>
             actor.meta_window.get_title()?.includes('Search Everything Lightly') && actor.visible),
@@ -90,12 +97,13 @@ export async function run(extension) {
         await delay(100);
         hotkey(keyboard);
         await until(() => overlay._isOpen, 'Global shortcut did not open the overlay');
-        assert(overlay._isOpen && Main.modalCount === 1, 'Modal did not open');
-        const dialogActor = overlay._dialog.dialogLayout._dialog;
+        assert(overlay._isOpen && Main.modalCount === 0,
+            'Search overlay still holds a modal grab');
+        const dialogActor = overlay._dialog;
         assert(dialogActor.opacity < 255 || dialogActor.scale_x < 1 || dialogActor.scale_y < 1,
             `Opening animation did not start: enabled=${St.Settings.get().enable_animations}, ` +
             `factor=${St.Settings.get().slow_down_factor}, opacity=${dialogActor.opacity}`);
-        assert(overlay._dialog._monitorConstraint.index === targetMonitor.index,
+        assert(overlay._monitorIndex === targetMonitor.index,
             'Overlay did not target the pointer monitor');
         extension._settings.set_strv('toggle-search', ['<Control><Super>Return']);
         prefsActor.meta_window.delete(global.get_current_time());
@@ -104,6 +112,8 @@ export async function run(extension) {
         'Preferences did not close after the monitor test');
         checks.push('Super+Enter default, GSettings shortcut change and second-monitor targeting');
         assert(global.stage.key_focus === overlay._entry.clutter_text, 'Entry did not receive focus');
+        assert(overlay._stageCapturedId !== 0, 'Outside-click handler was not connected while open');
+        assert(overlay._stageKeyFocusId !== 0, 'Focus-loss handler was not connected while open');
         await until(() => dialogActor.opacity === 255 && dialogActor.scale_x === 1 &&
             dialogActor.scale_y === 1, 'Opening animation did not finish');
         const [compactWidth, compactHeight] = overlay._dialog.contentLayout.get_transformed_size();
@@ -119,8 +129,9 @@ export async function run(extension) {
             `${compactWidth},${compactHeight}`);
         assert(compactY + compactHeight / 2 < targetMonitor.y + targetMonitor.height / 2,
             `Compact search row was not positioned above the monitor center: y=${compactY}, ` +
-            `height=${compactHeight}, translation=${overlay._dialog.contentLayout.translation_y}`);
-        assert(!overlay._expanded && !overlay._scroll.visible && !overlay._status.visible,
+            `height=${compactHeight}`);
+        assert(!overlay._expanded && !overlay._scroll.visible && !overlay._status.visible &&
+            !overlay._shortcutHelp.visible,
             'Compact overlay contains result or status content');
         assert(overlay._entry.hint_text === 'Search everything', 'Search hint was not updated');
         assert(overlay._entry.style.includes('background-color: rgba(12, 14, 18, 0.94)') &&
@@ -128,6 +139,9 @@ export async function run(extension) {
         'Compact field did not receive its less transparent shadowless style');
         checks.push(`compact animated overlay opened at ${compactWidth} × ${compactHeight} with initial focus`);
         await screenshot(`${root}/overlay-compact.png`, targetMonitor);
+        typeKey(keyboard, Clutter.KEY_x);
+        await until(() => overlay._entry.get_text() === 'x',
+            'Physical-style keyboard input did not reach the non-modal search entry');
         overlay._entry.set_text('physics report');
         await delay(30);
         const [typingWidth, typingHeight] = overlay._dialog.contentLayout.get_transformed_size();
@@ -155,10 +169,17 @@ export async function run(extension) {
         'Expanded overlay is not vertically centered on the target monitor');
         assert(!overlay._status.visible && overlay._status.text === '',
             'Searching status still shifts the results area');
+        const shortcutHints = overlay._shortcutHelp.get_children();
+        assert(overlay._shortcutHelp.visible && shortcutHints.length === 3,
+            'Expanded overlay does not show all shortcut hints');
+        assert(shortcutHints.map(hint => hint.get_child_at_index(0).text).join('|') ===
+            'Enter|Shift + Enter|Ctrl + Enter', 'Shortcut hints show the wrong keys');
+        assert(shortcutHints.every(hint => hint.get_child_at_index(1).text.length > 0),
+            'Shortcut hint action is empty');
         await until(() => overlay._items.length === 50, `Search results missing: ${overlay._status.text}`);
         overlay.toggle();
-        assert(!overlay._isOpen && overlay._isClosing && Main.modalCount === 1,
-            'Second toggle did not start the closing animation');
+        assert(!overlay._isOpen && overlay._isClosing && Main.modalCount === 0,
+            'Second toggle started closing with a modal grab');
         await until(() => dialogActor.opacity > 0 && dialogActor.opacity < 255 &&
             dialogActor.scale_x < 1, 'Closing animation did not change opacity and scale');
         await until(() => !overlay._isClosing && Main.modalCount === 0,
@@ -192,6 +213,7 @@ export async function run(extension) {
             .equal(Gio.File.new_for_path(GLib.get_home_dir())), 'Files button opened the wrong folder');
         openedUri.delete(null);
         checks.push('Files button opens Home and can be hidden or restored from GSettings');
+        interfaceSettings.set_boolean('enable-animations', true);
         overlay.toggle();
         overlay._entry.set_text('physics report');
         await until(() => overlay._items.length === 50, 'Results did not return after Files button test');
@@ -212,11 +234,40 @@ export async function run(extension) {
         assert(child.x < 30 && labels.height >= 30 && first.height >= 44,
             `Result layout is cramped: child x=${child.x}, text height=${labels.height}, row height=${first.height}`);
         await screenshot(`${root}/overlay.png`, Main.layoutManager.monitors[
-            overlay._dialog._monitorConstraint.index]);
+            overlay._monitorIndex]);
         assert(width >= 500 && width <= 620 && height < 480, `Overlay is not compact: ${width}x${height}`);
         assert(!overlay._dialog._lightbox, 'Search still dims the desktop');
         assert(overlay._scroll.vscrollbar_visible && !overlay._scroll.overlay_scrollbars,
             'Overflow scrollbar is not visible');
+        const [dialogWidth, dialogHeight] = overlay._dialog.get_transformed_size();
+        assert(Math.abs(dialogWidth - width) < 1 && Math.abs(dialogHeight - height) < 1,
+            `Search actor blocks more than its panel: ${dialogWidth}x${dialogHeight}`);
+        assert(overlay._handleStageEvent(Clutter.EventType.BUTTON_PRESS, overlay._entry) ===
+            Clutter.EVENT_PROPAGATE,
+        'Inside click was consumed instead of reaching the search field');
+        assert(overlay._isOpen && !overlay._isClosing,
+            'Clicking inside the search panel closed it');
+        assert(overlay._handleStageEvent(Clutter.EventType.SCROLL, backgroundProbe) ===
+            Clutter.EVENT_PROPAGATE,
+        'Background scrolling was consumed while search was open');
+        assert(overlay._isOpen && !overlay._isClosing,
+            'Background scrolling closed the search panel');
+        global.stage.set_key_focus(null);
+        assert(overlay._isClosing, 'Moving focus to another application did not close search');
+        assert(overlay._stageCapturedId === 0,
+            'Outside-click handler remained connected after search started closing');
+        assert(overlay._stageKeyFocusId === 0,
+            'Focus-loss handler remained connected after search started closing');
+        const keyFocus = global.stage.get_key_focus();
+        assert(!keyFocus || !overlay._dialog.contains(keyFocus),
+            'Search retained keyboard focus after an outside click');
+        await until(() => !overlay._isClosing, 'Outside-click closing animation did not finish');
+        interfaceSettings.set_boolean('enable-animations', false);
+        overlay.toggle();
+        overlay._entry.set_text('physics report');
+        await until(() => overlay._items.length === 50,
+            'Results did not return after outside-click close');
+        checks.push('background scroll passes through; inside click stays open; outside click closes');
         for (let i = 0; i < 49; i++)
             key(overlay, Clutter.KEY_Down);
         assert(overlay._selected === 49 && overlay._scroll.vadjustment.value > 0,
@@ -308,7 +359,7 @@ export async function run(extension) {
         await until(() => overlay._isOpen, 'Global shortcut stopped working');
         hotkey(keyboard, true);
         await until(() => !overlay._isOpen, 'Global shortcut did not toggle closed');
-        checks.push('global shortcut toggles the modal closed');
+        checks.push('global shortcut toggles the search panel closed');
         overlay.toggle();
         overlay._entry.set_text('physics');
         await until(() => overlay._appCount === 2 && overlay._files.get_children().length === 50,
@@ -317,7 +368,7 @@ export async function run(extension) {
             'Applications are not above files');
         await delay(200);
         await screenshot(`${root}/overlay-apps.png`, Main.layoutManager.monitors[
-            overlay._dialog._monitorConstraint.index]);
+            overlay._monitorIndex]);
         key(overlay, Clutter.KEY_Right);
         assert(overlay._selected === 1, 'Right did not move between application tiles');
         key(overlay, Clutter.KEY_Down);
@@ -350,7 +401,7 @@ export async function run(extension) {
         assert(onlyResult.height >= 44 && onlyResult.height < 80,
             `A single result filled the results panel: ${onlyResult.height}px`);
         await screenshot(`${root}/overlay-single.png`, Main.layoutManager.monitors[
-            overlay._dialog._monitorConstraint.index]);
+            overlay._monitorIndex]);
         overlay._entry.set_text('re:^report-[0-9]+\\.log$');
         await until(() => overlay._appCount === 0 && overlay._files.get_children().length === 2,
             'Regular expression did not return the expected files');
@@ -427,6 +478,9 @@ export async function run(extension) {
     } catch (caught) {
         error = `${caught}\n${caught.stack}`;
     } finally {
+        if (backgroundProbe) {
+            backgroundProbe.destroy();
+        }
         keyboard?.run_dispose();
     }
     GLib.file_set_contents(`${root}/result.json`, JSON.stringify({

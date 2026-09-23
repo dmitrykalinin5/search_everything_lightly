@@ -8,7 +8,6 @@ import St from 'gi://St';
 import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {adjustAnimationTime, ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 
 import {DEBOUNCE_MS, MAX_QUERY_LENGTH, queryState} from './query.js';
 import {ResultItem} from './resultItem.js';
@@ -39,14 +38,19 @@ export class SearchOverlay {
         this._expanded = false;
         this._contentWidth = 0;
         this._expandedHeight = 0;
+        this._monitorIndex = 0;
         this._action = null;
-        this._dialog = new ModalDialog.ModalDialog({styleClass: 'sel-dialog',
-            shellReactive: true, destroyOnClose: false, shouldFadeIn: false, shouldFadeOut: false});
+        this._stageCapturedId = 0;
+        this._stageKeyFocusId = 0;
+        this._dialog = new St.Widget({style_class: 'sel-dialog', visible: false,
+            reactive: true, layout_manager: new Clutter.BinLayout()});
         this._dialog.accessible_name = 'Search Everything Lightly';
-        this._dialog.buttonLayout.hide();
-        const content = this._dialog.contentLayout;
-        content.add_style_class_name('sel-content');
+        const content = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL,
+            style_class: 'sel-content'});
         content.clip_to_allocation = true;
+        this._dialog.contentLayout = content;
+        this._dialog.add_child(content);
+        Main.layoutManager.addTopChrome(this._dialog);
         this._entry = new St.Entry({hint_text: 'Search everything',
             style_class: 'search-entry sel-entry', can_focus: true, x_expand: true});
         this._entry.set_primary_icon(new St.Icon({icon_name: 'edit-find-symbolic',
@@ -75,7 +79,22 @@ export class SearchOverlay {
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC});
         content.add_child(this._scroll);
-        this._dialog.setInitialKeyFocus(this._entry.clutter_text);
+        this._shortcutHelp = new St.BoxLayout({
+            style_class: 'sel-shortcut-help', x_expand: true, visible: false,
+        });
+        for (const [shortcut, description] of [
+            ['Enter', _('Open')],
+            ['Shift + Enter', _('Show in folder')],
+            ['Ctrl + Enter', _('Open parent folder')],
+        ]) {
+            const hint = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL,
+                style_class: 'sel-shortcut-hint', x_expand: true,
+                x_align: Clutter.ActorAlign.CENTER});
+            hint.add_child(new St.Label({text: shortcut, style_class: 'sel-shortcut-key'}));
+            hint.add_child(new St.Label({text: description, style_class: 'sel-shortcut-action'}));
+            this._shortcutHelp.add_child(hint);
+        }
+        content.add_child(this._shortcutHelp);
         this._entry.clutter_text.connect('text-changed', () => this._queryChanged());
         this._entry.connect('secondary-icon-clicked', () =>
             this._activate(GLib.get_home_dir()));
@@ -104,17 +123,19 @@ export class SearchOverlay {
         const height = Math.min(320, area.height / scale * 0.45) + 48;
         this._contentWidth = width;
         this._expandedHeight = height;
+        this._monitorIndex = monitor;
         this._expanded = false;
         this._appColumns = Math.max(1, Math.min(4, Math.floor(width / 104)));
         this._setContentHeight(COMPACT_HEIGHT);
-        this._isOpen = this._dialog.open();
-        if (!this._isOpen)
-            return;
-        // ModalDialog.open() resets this to the pointer monitor. Override it
-        // synchronously before the compositor renders the next frame.
-        this._dialog._monitorConstraint.index = monitor;
-        this._dialog.contentLayout.translation_y =
-            -(this._expandedHeight - COMPACT_HEIGHT) / 2;
+        this._dialog.set_position(
+            Math.round(area.x + (area.width - width * scale) / 2),
+            Math.round(area.y + (area.height - height * scale) / 2));
+        this._dialog.show();
+        this._isOpen = true;
+        this._stageCapturedId = global.stage.connect(
+            'captured-event', (actor, event) => this._stageCaptured(actor, event));
+        this._stageKeyFocusId = global.stage.connect(
+            'notify::key-focus', () => this._stageKeyFocusChanged());
         this._animateOpen();
         this._queryChanged();
         this._entry.grab_key_focus();
@@ -141,8 +162,15 @@ export class SearchOverlay {
             return;
         this._isOpen = false;
         this._isClosing = true;
+        global.stage.disconnect(this._stageCapturedId);
+        this._stageCapturedId = 0;
+        global.stage.disconnect(this._stageKeyFocusId);
+        this._stageKeyFocusId = 0;
+        const keyFocus = global.stage.get_key_focus();
+        if (keyFocus && this._dialog.contains(keyFocus))
+            global.stage.set_key_focus(null);
         this._cancelPending();
-        const actor = this._dialog.dialogLayout._dialog;
+        const actor = this._dialog;
         actor.remove_all_transitions();
         const duration = animate ? adjustAnimationTime(OPEN_ANIMATION_MS) : 0;
         if (duration === 0) {
@@ -162,8 +190,8 @@ export class SearchOverlay {
     _finishClose() {
         if (!this._isClosing)
             return;
-        this._dialog.close();
-        const actor = this._dialog.dialogLayout._dialog;
+        this._dialog.hide();
+        const actor = this._dialog;
         actor.remove_all_transitions();
         actor.opacity = 255;
         actor.scale_x = 1;
@@ -180,8 +208,9 @@ export class SearchOverlay {
         content.set_height(-1);
         content.set_style(
             `width: ${this._contentWidth}px; height: ${height}px;`);
-        content.translation_y = -(this._expandedHeight - height) / 2;
         this._entry.set_style(COMPACT_ENTRY_STYLE);
+        this._scroll.hide();
+        this._shortcutHelp.hide();
     }
 
     _expand() {
@@ -196,17 +225,18 @@ export class SearchOverlay {
         content.set_style(`width: ${this._contentWidth}px;`);
         content.add_style_class_name('sel-expanded');
         this._entry.set_style(EXPANDED_ENTRY_STYLE);
+        this._scroll.show();
+        this._shortcutHelp.show();
         const duration = adjustAnimationTime(OPEN_ANIMATION_MS);
         content.ease({
             height: targetHeight,
-            translation_y: 0,
             duration,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         });
     }
 
     _animateOpen() {
-        const actor = this._dialog.dialogLayout._dialog;
+        const actor = this._dialog;
         actor.remove_all_transitions();
         actor.set_pivot_point(0.5, 0.5);
         actor.opacity = 0;
@@ -230,11 +260,13 @@ export class SearchOverlay {
         this.close(false);
         Main.layoutManager.disconnect(this._monitorsId);
         this._settings.disconnect(this._fileManagerSettingId);
+        Main.layoutManager.removeChrome(this._dialog);
         this._dialog.destroy();
         this._dialog = null;
         this._entry = null;
         this._status = null;
         this._scroll = null;
+        this._shortcutHelp = null;
         this._results = null;
         this._appGrid = null;
         this._files = null;
@@ -266,7 +298,7 @@ export class SearchOverlay {
         this._items = [];
         this._appCount = 0;
         this._selected = -1;
-        this._scroll.hide();
+        this._scroll.visible = this._expanded;
         this._scroll.vadjustment.value = 0;
     }
 
@@ -359,7 +391,7 @@ export class SearchOverlay {
     }
 
     _keyPressed(event) {
-        if (event.type() !== Clutter.EventType.KEY_PRESS)
+        if (!this._isOpen || event.type() !== Clutter.EventType.KEY_PRESS)
             return Clutter.EVENT_PROPAGATE;
         const key = event.get_key_symbol();
         const ctrl = Boolean(event.get_state() & Clutter.ModifierType.CONTROL_MASK);
@@ -393,6 +425,28 @@ export class SearchOverlay {
             return Clutter.EVENT_PROPAGATE;
         }
         return Clutter.EVENT_STOP;
+    }
+
+    _stageCaptured(_actor, event) {
+        return this._handleStageEvent(event.type(), global.stage.get_event_actor(event));
+    }
+
+    _stageKeyFocusChanged() {
+        const keyFocus = global.stage.get_key_focus();
+        if (this._isOpen && (!keyFocus || !this._dialog.contains(keyFocus)))
+            this.close();
+    }
+
+    _handleStageEvent(type, target) {
+        if (!this._isOpen || this._isClosing || ![
+            Clutter.EventType.BUTTON_PRESS,
+            Clutter.EventType.TOUCH_BEGIN,
+        ].includes(type))
+            return Clutter.EVENT_PROPAGATE;
+
+        if (!target || !this._dialog.contains(target))
+            this.close();
+        return Clutter.EVENT_PROPAGATE;
     }
 
     _activateApplication(app) {

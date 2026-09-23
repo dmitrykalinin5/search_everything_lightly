@@ -44,7 +44,28 @@
 }
 
 .sel-scroll {
-    margin: 0 12px 12px 12px;
+    margin: 0 12px;
+}
+
+.sel-shortcut-help {
+    margin: 0 12px 10px 12px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sel-shortcut-hint {
+    spacing: 2px;
+}
+
+.sel-shortcut-key {
+    font-size: 0.78em;
+    font-weight: bold;
+    color: rgba(245, 245, 245, 0.88);
+}
+
+.sel-shortcut-action {
+    font-size: 0.74em;
+    color: rgba(245, 245, 245, 0.58);
 }
 
 .sel-files {

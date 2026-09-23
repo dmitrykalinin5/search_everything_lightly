@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Search Everything Lightly 0.4.0\n"
+"Project-Id-Version: Search Everything Lightly 0.6.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-09 23:00+0300\n"
 "PO-Revision-Date: 2026-09-12 00:00+0300\n"
@@ -14,6 +14,15 @@ msgstr ""
 
 msgid "Open Files"
 msgstr "Открыть «Файлы»"
+
+msgid "Open"
+msgstr "Открыть"
+
+msgid "Show in folder"
+msgstr "Показать в папке"
+
+msgid "Open parent folder"
+msgstr "Открыть родительскую папку"
 
 msgid "GNOME LocalSearch is unavailable and plocate is not installed."
 msgstr "GNOME LocalSearch недоступен, а plocate не установлен."
