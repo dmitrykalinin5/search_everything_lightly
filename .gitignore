@@ -10,3 +10,11 @@ ideas.txt
 /.reposkillopt/
 GNOME_EXTENSIONS_PRE_RELEASE_CHECKLIST.md
 TECHNICAL_SPEC_Search_Everything_Lightly.md
+
+# Local AI project memory
+/AGENTS.md
+/REPO_MAP.md
+/ARCHITECTURE.md
+/docs/PROJECT_CONTEXT.md
+/docs/CURRENT_STATE.md
+/docs/DECISIONS.md
