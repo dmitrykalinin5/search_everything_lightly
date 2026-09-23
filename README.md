@@ -15,11 +15,11 @@ A fast, compact Spotlight-style search overlay for GNOME Shell 49 and 50 on Wayl
 - One-character queries, multiple words, standard glob masks and POSIX extended regular expressions are supported.
 - The overlay opens as a compact search row, then expands once after the first input and keeps a stable size until closed.
 - The compact state shows only the shadowless `Search everything` field with a denser translucent fill. On the first character, the same field remains fixed while its container grows smoothly downward into the centered result panel. Escape or a second shortcut press fades and scales it away.
-- The expanded panel is translucent and has no drop shadow. A single result keeps the same row height as it has in a longer list, leaving the rest of the fixed panel empty.
+- The expanded panel is translucent, has no drop shadow and shows hints for Enter, Shift+Enter and Ctrl+Enter. A single result keeps the same row height as it has in a longer list, leaving the rest of the fixed panel empty.
 - An optional folder icon in the field opens the home folder; it can be hidden or restored in preferences.
 - On multi-monitor desktops, the overlay opens on the focused window's monitor, or on the pointer's monitor when no window is focused.
 - A 180 ms fade-and-scale opening animation follows the system animation preference.
-- The desktop is not dimmed. The result list has a visible scrollbar and keeps the previous results visible while the next query is running.
+- The desktop is not dimmed or covered by an invisible input layer. Scrolling outside the panel continues to reach the current application; clicking outside closes SEL while the click continues to its target. The result list has a visible scrollbar and keeps the previous results visible while the next query is running.
 - Everything stays local. There are no network requests, telemetry or stored query history.
 
 ## Search sources and automatic updates
@@ -166,13 +166,13 @@ python3 tests/run_shell_smoke.py
 python3 tests/check_archive.py
 ```
 
-The test suite uses a private plocate database and does not modify the system index. The headless Shell smoke test rebuilds the extension and runs in a separate D-Bus session with two virtual 1280×900 monitors. Its report includes the actual Shell version. It checks the global shortcut, monitor targeting, compact and expanded geometry, animations, focus, scrolling, application and file activation, masks, regular expressions, cancellation and extension cleanup.
+The test suite uses a private plocate database and does not modify the system index. The headless Shell smoke test rebuilds the extension and runs in a separate D-Bus session with two virtual 1280×900 monitors. Its report includes the actual Shell version. It checks the global shortcut, monitor targeting, compact and expanded geometry, animations, non-modal keyboard input, focus-loss closing, background scrolling, application and file activation, masks, regular expressions, cancellation and extension cleanup.
 
 Before adding a later major version, check its [porting guide](https://gjs.guide/extensions/), update `shell-version` in `metadata.json` and the corresponding check in `scripts/check.py`, and run the tests above on both the new version and previously supported versions. GNOME 51 and later are not yet declared compatible.
 
 Manual checks for real monitors, scaling and themes are listed in [tests/MANUAL.md](tests/MANUAL.md).
 
-Compatibility verified on GNOME Shell **49.9** (Fedora 43) and **50.4** (Fedora 44 container): 17 headless UI scenarios and 19 GJS integration tests passed on each. The container uses software rendering; physical monitors, fractional scaling and session locking still need manual testing.
+Compatibility verified on GNOME Shell **49.9** (Fedora 43) and **50.5** (Fedora 44 container): 18 headless UI scenarios and 19 GJS integration tests passed on each. The container uses software rendering; physical monitors, fractional scaling and session locking still need manual testing.
 
 ## Project structure
 
