@@ -3,8 +3,9 @@
   "name": "Search Everything Lightly",
   "description": "Search apps, files and folders in a compact overlay. GNOME LocalSearch updates ordinary files automatically; optional plocate adds hidden and system files.",
   "shell-version": ["49", "50"],
-  "version": 5,
-  "version-name": "0.5.0",
+  "version": 6,
+  "version-name": "0.6.0",
+  "url": "https://github.com/dmitrykalinin5/search_everything_lightly",
   "settings-schema": "org.gnome.shell.extensions.search-everything-lightly",
   "gettext-domain": "search-everything-lightly"
 }

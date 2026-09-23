@@ -12,8 +12,9 @@ ROOT = Path(__file__).resolve().parent.parent
 metadata = json.loads((ROOT / 'metadata.json').read_text())
 assert metadata['uuid'] == 'search_everything_lightly@dmitrykalinin5.github.com'
 assert metadata['shell-version'] == ['49', '50']
-assert metadata['version'] == 5
-assert metadata['version-name'] == json.loads((ROOT / 'package.json').read_text())['version'] == '0.5.0'
+assert metadata['version'] == 6
+assert metadata['version-name'] == json.loads((ROOT / 'package.json').read_text())['version'] == '0.6.0'
+assert metadata['url'] == 'https://github.com/dmitrykalinin5/search_everything_lightly'
 readme = (ROOT / 'README.md').read_text()
 readme_ru = (ROOT / 'README.ru.md').read_text()
 assert '[Русский](README.ru.md)' in readme
